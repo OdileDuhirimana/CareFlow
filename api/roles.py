@@ -1,0 +1,9 @@
+ROLE_ADMIN = 'admin'
+ROLE_CLINICIAN = 'clinician'
+ROLE_OUTREACH = 'outreach'
+
+CAREFLOW_ROLES = (
+    ROLE_ADMIN,
+    ROLE_CLINICIAN,
+    ROLE_OUTREACH,
+)
