@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CareFlow | Intelligent Care Coordination</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0a1a24;
+      --bg-soft: #102435;
+      --card: rgba(255, 255, 255, 0.08);
+      --line: rgba(255, 255, 255, 0.2);
+      --text: #eaf6ff;
+      --muted: #9ec0d8;
+      --accent-a: #06d6a0;
+      --accent-b: #ff9f1c;
+      --accent-c: #4cc9f0;
+      --danger: #ff5d73;
+      --success: #59f08f;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: 'Sora', sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 10% 10%, rgba(6, 214, 160, 0.22), transparent 40%),
+        radial-gradient(circle at 90% 20%, rgba(255, 159, 28, 0.18), transparent 35%),
+        radial-gradient(circle at 80% 80%, rgba(76, 201, 240, 0.16), transparent 42%),
+        linear-gradient(180deg, #08131b, #10273a 58%, #0b1d2b 100%);
+      min-height: 100vh;
+    }
+
+    .page {
+      max-width: 1150px;
+      margin: 0 auto;
+      padding: 36px 20px 44px;
+      animation: fade-up 680ms ease-out;
+    }
+
+    .badge {
+      display: inline-flex;
+      gap: 10px;
+      align-items: center;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 8px 14px;
+      font-size: 12px;
+      color: var(--muted);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: var(--success);
+      box-shadow: 0 0 0 10px rgba(89, 240, 143, 0.16);
+    }
+
+    h1 {
+      margin: 16px 0 10px;
+      font-size: clamp(2rem, 6vw, 3.6rem);
+      line-height: 1.05;
+      max-width: 900px;
+    }
+
+    .highlight {
+      background: linear-gradient(90deg, var(--accent-a), var(--accent-b));
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+
+    .lead {
+      max-width: 780px;
+      color: var(--muted);
+      line-height: 1.8;
+      margin-bottom: 28px;
+      font-size: 1.02rem;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 14px;
+    }
+
+    .stat {
+      grid-column: span 3;
+      background: var(--card);
+      border: 1px solid var(--line);
+      backdrop-filter: blur(5px);
+      border-radius: 16px;
+      padding: 16px;
+    }
+
+    .stat h3 {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.8rem;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .stat p {
+      margin: 8px 0 0;
+      font-size: 1.9rem;
+      font-weight: 700;
+    }
+
+    .panels {
+      margin-top: 22px;
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 14px;
+    }
+
+    .panel {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 18px;
+    }
+
+    .panel h2 {
+      margin: 0 0 14px;
+      font-size: 1rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+    }
+
+    .feature-list {
+      display: grid;
+      gap: 12px;
+    }
+
+    .feature {
+      border-left: 3px solid var(--accent-c);
+      padding-left: 12px;
+      font-size: 0.95rem;
+      line-height: 1.6;
+      color: #d8ecfa;
+    }
+
+    .feature strong { color: #fff; }
+
+    .endpoint {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: rgba(8, 19, 27, 0.65);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.78rem;
+      color: #daf1ff;
+      margin-bottom: 8px;
+      overflow-x: auto;
+      white-space: nowrap;
+    }
+
+    .pill {
+      font-size: 0.68rem;
+      padding: 3px 8px;
+      border-radius: 999px;
+      border: 1px solid;
+    }
+
+    .get { color: var(--accent-c); border-color: rgba(76, 201, 240, 0.5); }
+    .post { color: var(--accent-a); border-color: rgba(6, 214, 160, 0.5); }
+
+    .footer {
+      margin-top: 24px;
+      color: var(--muted);
+      font-size: 0.84rem;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .risk {
+      display: inline-flex;
+      gap: 8px;
+      align-items: center;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      padding: 7px 10px;
+      border-radius: 999px;
+      margin-top: 10px;
+      color: #ebf9ff;
+    }
+
+    .risk .chip {
+      border-radius: 999px;
+      padding: 4px 8px;
+      font-size: 0.72rem;
+      background: rgba(255, 93, 115, 0.18);
+      color: #ffd3da;
+      border: 1px solid rgba(255, 93, 115, 0.45);
+    }
+
+    @keyframes fade-up {
+      from { opacity: 0; transform: translateY(14px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (max-width: 920px) {
+      .stat { grid-column: span 6; }
+      .panels { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 620px) {
+      .stat { grid-column: span 12; }
+      .page { padding: 26px 14px 30px; }
+      h1 { font-size: 2rem; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <span class="badge"><span class="dot"></span>CareFlow Platform Live</span>
+    <h1>
+      Intelligent care coordination for <span class="highlight">clinical outcomes and social impact</span>
+    </h1>
+    <p class="lead">
+      CareFlow combines predictive risk scoring, remote monitoring, community referrals, and analytics into one production-ready API.
+      It supports hospitals, outreach teams, and NGOs to close care gaps and intervene earlier for vulnerable patients.
+    </p>
+
+    <section class="grid">
+      <article class="stat"><h3>Patients</h3><p>{{ patients_total }}</p></article>
+      <article class="stat"><h3>Assessments</h3><p>{{ assessments_total }}</p></article>
+      <article class="stat"><h3>Open Alerts</h3><p>{{ open_alerts }}</p></article>
+      <article class="stat"><h3>Community Resources</h3><p>{{ community_resources }}</p></article>
+      <article class="stat"><h3>Referrals</h3><p>{{ referrals_total }}</p></article>
+      <article class="stat"><h3>Urgent Check-ins</h3><p>{{ urgent_checkins }}</p></article>
+      <article class="stat"><h3>Active Admissions</h3><p>{{ active_admissions }}</p></article>
+      <article class="stat"><h3>Pending Labs</h3><p>{{ pending_labs }}</p></article>
+      <article class="stat"><h3>Bed Occupancy</h3><p>{{ bed_occupancy_rate }}%</p></article>
+      <article class="stat"><h3>Active Med Orders</h3><p>{{ active_medications }}</p></article>
+    </section>
+
+    <section class="panels">
+      <article class="panel">
+        <h2>Impact Modules</h2>
+        <div class="feature-list">
+          <div class="feature"><strong>Clinical Triage:</strong> Explainable risk scoring with key risk drivers and automated high-priority alerts.</div>
+          <div class="feature"><strong>Remote Monitoring:</strong> Patient check-ins detect deterioration through vitals, mood, and adherence signals.</div>
+          <div class="feature"><strong>Community Health:</strong> Resource recommendation and referral workflows connect patients to non-clinical support.</div>
+          <div class="feature"><strong>Outcome Analytics:</strong> Operational + impact dashboards for leadership, care teams, and grant reporting.</div>
+        </div>
+        {% if latest_assessment %}
+        <div class="risk">
+          Latest risk snapshot
+          <span class="chip">{{ latest_assessment.risk_level }} - {{ latest_assessment.risk_score }}</span>
+        </div>
+        {% endif %}
+      </article>
+
+      <article class="panel">
+        <h2>Core Endpoints</h2>
+        <div class="endpoint"><span class="pill post">POST</span>/api/triage/assess/</div>
+        <div class="endpoint"><span class="pill post">POST</span>/api/admissions/ + transfer/discharge</div>
+        <div class="endpoint"><span class="pill post">POST</span>/api/checkins/</div>
+        <div class="endpoint"><span class="pill get">GET</span>/api/patients/{id}/community-recommendations/</div>
+        <div class="endpoint"><span class="pill post">POST</span>/api/medication-orders/ + /mark-status/</div>
+        <div class="endpoint"><span class="pill post">POST</span>/api/lab-orders/ + /start/ + /complete/</div>
+        <div class="endpoint"><span class="pill post">POST</span>/api/referrals/</div>
+        <div class="endpoint"><span class="pill get">GET</span>/api/analytics/overview/</div>
+        <div class="endpoint"><span class="pill get">GET</span>/api/analytics/impact/</div>
+        <div class="endpoint"><span class="pill get">GET</span>/api/analytics/hospital-flow/</div>
+        <div class="endpoint"><span class="pill get">GET</span>/api/docs/</div>
+      </article>
+    </section>
+
+    <footer class="footer">
+      <span>Deployment ready with Docker, CI, health checks, and OpenAPI docs.</span>
+      <span>Generated: {{ deploy_timestamp|date:"Y-m-d H:i:s" }} UTC</span>
+    </footer>
+  </main>
+</body>
+</html>
