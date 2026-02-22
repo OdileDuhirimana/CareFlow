@@ -2,7 +2,7 @@ services:
   - type: web
     name: careflow-api
     env: docker
-    plan: starter
+    plan: free
     dockerfilePath: ./Dockerfile
     healthCheckPath: /health/ready/
     envVars:
@@ -15,7 +15,7 @@ services:
       - key: SECURE_SSL_REDIRECT
         value: "true"
       - key: CORS_ALLOWED_ORIGINS
-        value: https://careflow-frontend.onrender.com
+        sync: false
       - key: SECRET_KEY
         generateValue: true
       - key: JWT_SECRET
@@ -27,4 +27,4 @@ services:
 
 databases:
   - name: careflow-db
-    plan: starter
+    plan: free
