@@ -406,6 +406,43 @@ part of the versioned resource contract a client codes against.
    *accidental* drift, not a full multi-version compatibility test — see
    "Future Improvements."
 
+## Error Response Shape
+
+Every error response (validation failures, permission denials, authentication failures, throttling, not-found) is normalized by a custom `EXCEPTION_HANDLER` (`api/exceptions.py`) into one consistent envelope:
+
+```json
+{
+  "detail": "patient: Patient already has an active admission.",
+  "errors": {"patient": ["Patient already has an active admission."]}
+}
+```
+
+`detail` is always a human-readable summary string; `errors` is the field-keyed breakdown (empty `{}` for non-field errors like 401/403/404/429). This now also covers `AdmissionViewSet.transfer`/`.discharge` and `LabOrderViewSet.start`/`.complete`'s error paths, which previously returned a raw, non-normalized `Response` that bypassed this envelope — a side effect of moving their business logic into `api/services/` (see `api/services/admissions.py` module docstring).
+
+## Audit Logging
+
+CareFlow stores PHI-adjacent data (patient records, diagnoses, risk assessments, medication orders). An `AuditLog` model (`api/models.py`) records who accessed or changed that data and when:
+
+- Patient: view, create, update, delete
+- MedicationOrder: create, update (including `mark-status` transitions), delete
+- Admission: create, update, transfer, discharge
+- Exporting risk assessments to CSV (`GET /api/v1/analytics/assessments/export.csv`), including row count and applied filters
+
+Entries are append-only (no update/delete permitted, even from the Django admin) and are mirrored to structured logs via the `careflow.audit` logger. `record_audit_event` (`api/audit.py`) never raises — a failure to persist the audit row itself is caught, logged, and counted via `/metrics`, so a broken audit sink degrades observability, never availability (previously, an unguarded audit-logging failure could turn an already-successful patient read into an opaque 500).
+
+## Structured Logging, Error Tracking & Metrics
+
+All application logs are emitted as JSON (via `python-json-logger`) rather than plain text, so they can be filtered/aggregated by tooling like CloudWatch, Datadog, or Loki. Key domain events are logged explicitly:
+
+- `clinical_alert_created` — every time an alert is created (triage or check-in triggered)
+- `workflow_rule_executed` / `domain_event_processed` / `domain_event_failed` — every workflow-engine action
+- `audit_event` / `audit_event_persist_failed` — every audit-logged access/mutation, and any failure to record one
+- `risk_assessment_export`, `user_logout` — specific sensitive actions
+
+Unhandled exceptions are additionally reported to [Sentry](https://sentry.io) when `SENTRY_DSN` is set in the environment, with performance tracing enabled at a conservative 20% sample rate (`SENTRY_TRACES_SAMPLE_RATE`, previously 0% — error tracking without any trace data made a real production slowdown much harder to diagnose). It is a no-op in local dev and CI, where the variable is left unset.
+
+`GET /metrics/` exposes a small, fixed set of Prometheus-format counters (`careflow_http_requests_total`, `careflow_http_responses_{2xx,4xx,5xx}_total`, `careflow_domain_events_{processed,failed}_total`, `careflow_audit_events_total`) — a genuine scrape target for a real Prometheus server, intentionally scoped smaller than a full APM/metrics stack (see `api/metrics.py` and "Known Tradeoffs").
+
 ## Demo Bootstrap (One Command)
 
 ```bash
@@ -484,6 +521,7 @@ Configured automatically via `render.yaml`:
 - `ALLOWED_HOSTS=.onrender.com`
 - `CSRF_TRUSTED_ORIGINS=https://*.onrender.com`
 - `SECURE_SSL_REDIRECT=true`
+- `SENTRY_TRACES_SAMPLE_RATE=0.2`
 
 Set manually to match your frontend/domain:
 - `CORS_ALLOWED_ORIGINS` (for example `https://careflow-web.onrender.com`)

@@ -2,6 +2,7 @@ from django.contrib import admin
 from .models import (
     Admission,
     Appointment,
+    AuditLog,
     Bed,
     ClinicalAlert,
     CommunityResource,
@@ -112,3 +113,19 @@ class DomainEventAdmin(admin.ModelAdmin):
     list_display = ('id', 'event_type', 'source', 'status', 'attempts', 'occurred_at', 'processed_at')
     search_fields = ('event_type', 'source', 'error_message')
     list_filter = ('status', 'event_type', 'occurred_at')
+
+
+@admin.register(AuditLog)
+class AuditLogAdmin(admin.ModelAdmin):
+    list_display = ('id', 'actor', 'action', 'resource_type', 'resource_id', 'ip_address', 'created_at')
+    search_fields = ('actor__username', 'resource_type', 'resource_id', 'detail')
+    list_filter = ('action', 'resource_type', 'created_at')
+    readonly_fields = [f.name for f in AuditLog._meta.fields]
+
+    def has_add_permission(self, request):
+        # Audit rows are only ever created by application code, never by hand.
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        # Audit trail is append-only; editing would defeat its purpose.
+        return False

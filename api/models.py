@@ -502,3 +502,62 @@ class WorkflowRule(models.Model):
 
     def __str__(self):
         return f"{self.name} [{self.event_type}]"
+
+
+class AuditLog(models.Model):
+    """Immutable record of who accessed or changed PHI-adjacent data, and when.
+
+    Why this exists: CareFlow stores patient-identifying and clinical data
+    (Patient, RiskAssessment, MedicationOrder, LabOrder). A healthcare-domain
+    application with zero record of "who viewed/exported/modified this
+    patient's data" cannot support any real compliance or incident-response
+    workflow. This model is intentionally minimal (no generic-relation
+    framework, no admin-configurable rule engine) — it is written to
+    explicitly, at the specific call sites that touch sensitive data
+    (see `api/audit.py`), rather than wired blindly into every model via
+    signals, so that log entries stay meaningful and low-noise.
+
+    Rows are never updated or deleted by application code — this table is
+    an append-only trail. There is intentionally no FK `on_delete=CASCADE`
+    from `actor` to avoid audit history disappearing if a user account is
+    later removed; `SET_NULL` preserves the historical record.
+    """
+
+    ACTION_VIEW = 'view'
+    ACTION_CREATE = 'create'
+    ACTION_UPDATE = 'update'
+    ACTION_DELETE = 'delete'
+    ACTION_EXPORT = 'export'
+    ACTION_CHOICES = [
+        (ACTION_VIEW, 'View'),
+        (ACTION_CREATE, 'Create'),
+        (ACTION_UPDATE, 'Update'),
+        (ACTION_DELETE, 'Delete'),
+        (ACTION_EXPORT, 'Export'),
+    ]
+
+    actor = models.ForeignKey(
+        get_user_model(),
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='audit_logs',
+    )
+    action = models.CharField(max_length=20, choices=ACTION_CHOICES)
+    resource_type = models.CharField(max_length=100, help_text='Model/resource name, e.g. "Patient".')
+    resource_id = models.CharField(max_length=64, blank=True, help_text='Primary key of the affected record, if any.')
+    detail = models.CharField(max_length=255, blank=True, help_text='Short human-readable context, e.g. filter params.')
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['resource_type', 'resource_id']),
+            models.Index(fields=['actor', 'created_at']),
+            models.Index(fields=['action', 'created_at']),
+        ]
+
+    def __str__(self):
+        actor_label = self.actor.username if self.actor else 'anonymous'
+        return f"{actor_label} {self.action} {self.resource_type}:{self.resource_id or '-'} @ {self.created_at.isoformat()}"

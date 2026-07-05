@@ -3,7 +3,9 @@ from pathlib import Path
 from datetime import timedelta
 
 import dj_database_url
+import sentry_sdk
 from django.core.exceptions import ImproperlyConfigured
+from sentry_sdk.integrations.django import DjangoIntegration
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -28,6 +30,8 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt.token_blacklist',
     'drf_spectacular',
     'corsheaders',
+    'django_extensions',
+    'django_filters',
     'api',
 ]
 
@@ -119,12 +123,37 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# Redis URL, shared by the cache backend (careflow/settings.py CACHES) and
-# the Celery broker/result backend below. Unset in local dev/CI, which is
-# what makes both fall back to single-process-safe defaults (LocMemCache,
-# Celery eager mode) with zero extra infrastructure required to run this
+# Cache
+#
+# Why Redis-backed when available, LocMemCache otherwise: `LocMemCache` is
+# per-process. The Dockerfile/docker-compose run Gunicorn with 3 worker
+# processes, so a per-process cache means DRF's throttle counters (and, once
+# added below, the analytics response cache) are only correct *within a
+# single worker* — a client can be routed to a different worker on each
+# request and effectively get 3x the intended rate limit / see stale-but-
+# inconsistent cached analytics across workers. Pointing `CACHES` at a
+# shared Redis instance (via `django-redis`) fixes both problems at once
+# with one setting, which is why the same `REDIS_URL` also backs Celery
+# (see `CELERY_BROKER_URL` below). Local dev and CI do not set `REDIS_URL`
+# and fall back to `LocMemCache`, which is correct for a single-process
+# `runserver`/test-runner and requires no extra infrastructure to run this
 # project locally.
 REDIS_URL = os.getenv('REDIS_URL', '')
+if REDIS_URL:
+    CACHES = {
+        'default': {
+            'BACKEND': 'django_redis.cache.RedisCache',
+            'LOCATION': REDIS_URL,
+            'OPTIONS': {'CLIENT_CLASS': 'django_redis.client.DefaultClient'},
+        }
+    }
+else:
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+            'LOCATION': 'careflow-locmem',
+        }
+    }
 
 # DRF
 REST_FRAMEWORK = {
@@ -134,11 +163,14 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.IsAuthenticated',
     ),
+    'DEFAULT_FILTER_BACKENDS': (
+        'django_filters.rest_framework.DjangoFilterBackend',
+    ),
     # `Resilient*` wrappers (api/throttling.py) rather than DRF's stock
     # `AnonRateThrottle`/`UserRateThrottle` directly: the stock classes read
     # and write the rate-limit counter straight through `django.core.cache`
     # with no exception handling, so a Redis outage (the `CACHES` backend
-    # whenever `REDIS_URL` is set — see below) previously propagated an
+    # whenever `REDIS_URL` is set — see above) previously propagated an
     # unhandled `ConnectionError` out of every single throttled request,
     # taking down the entire API surface rather than just degrading rate
     # limiting. See `api/throttling.py` module docstring for the full
@@ -159,7 +191,20 @@ REST_FRAMEWORK = {
         'predict_health_risk': os.getenv('DRF_THROTTLE_PREDICT', '20/minute'),
         'token_obtain': os.getenv('DRF_THROTTLE_TOKEN', '10/minute'),
     },
+    # DEFAULT_PAGINATION_CLASS + PAGE_SIZE: every list endpoint now returns
+    # bounded pages ({"count", "next", "previous", "results"}) instead of
+    # the full unbounded table. Without this, patient/appointment/lab-order
+    # collections would grow unboundedly slow as demo/production data
+    # accumulates — this was the single biggest scalability gap identified
+    # in the code review.
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': int(os.getenv('DRF_PAGE_SIZE', '25')),
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+    # Normalizes every DRF-raised exception (ValidationError, PermissionDenied,
+    # NotAuthenticated, Throttled, etc.) into one consistent
+    # {"detail": ..., "errors": {...}} envelope. See `api/exceptions.py` for
+    # the full rationale.
+    'EXCEPTION_HANDLER': 'api.exceptions.careflow_exception_handler',
 }
 
 SIMPLE_JWT = {
@@ -209,6 +254,18 @@ CELERY_BEAT_SCHEDULE = {
         'schedule': int(os.getenv('CELERY_BEAT_SWEEP_SECONDS', '300')),
     },
 }
+
+# Analytics response caching
+#
+# `CareAnalyticsView`/`ImpactAnalyticsView`/`HospitalFlowAnalyticsView`
+# (api/views.py) recompute several aggregate queries from scratch on every
+# request. A short TTL (default 60s) is enough to absorb dashboard-polling
+# traffic without ever showing meaningfully stale KPIs — see README "Known
+# Tradeoffs" for why a longer TTL or invalidation-on-write was deliberately
+# not pursued for a portfolio-scale project. Uses the same `CACHES` backend
+# configured above (LocMemCache locally, Redis in production), so this is
+# consistent across Gunicorn workers wherever `REDIS_URL` is set.
+ANALYTICS_CACHE_TTL_SECONDS = int(os.getenv('ANALYTICS_CACHE_TTL_SECONDS', '60'))
 
 SPECTACULAR_SETTINGS = {
     'TITLE': 'CareFlow API',
@@ -273,24 +330,72 @@ if not DEBUG:
     X_FRAME_OPTIONS = 'DENY'
 
 # Logging
+#
+# Structured JSON logging (via python-json-logger) instead of a plain-text
+# formatter. Why: this app emits domain-significant events (alert creation,
+# workflow-rule execution, audit access/export, login/logout) that a real
+# deployment would need to search/filter/alert on — "why didn't this
+# high-risk triage trigger an alert?" is a question you answer by grepping
+# structured fields (event_type, patient_id, rule_id), not by parsing
+# freeform text. JSON output is also what every log aggregation platform
+# (CloudWatch, Datadog, Loki, etc.) expects natively.
 LOG_LEVEL = os.getenv('LOG_LEVEL', 'INFO')
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
     'formatters': {
-        'simple': {
-            'format': '[{levelname}] {asctime} {name}: {message}',
-            'style': '{',
+        'json': {
+            '()': 'pythonjsonlogger.jsonlogger.JsonFormatter',
+            'format': '%(asctime)s %(levelname)s %(name)s %(message)s',
         },
     },
     'handlers': {
         'console': {
             'class': 'logging.StreamHandler',
-            'formatter': 'simple',
+            'formatter': 'json',
         },
     },
     'root': {
         'handlers': ['console'],
         'level': LOG_LEVEL,
     },
+    'loggers': {
+        'django': {
+            'handlers': ['console'],
+            'level': LOG_LEVEL,
+            'propagate': False,
+        },
+        'careflow': {
+            'handlers': ['console'],
+            'level': LOG_LEVEL,
+            'propagate': False,
+        },
+    },
 }
+
+# Error tracking + performance tracing (Sentry)
+#
+# No-op unless SENTRY_DSN is set in the environment — local dev and CI never
+# send anything anywhere. When set (typically only in production), this
+# gives visibility into unhandled exceptions that would otherwise only
+# surface as an opaque 500 with no external record, which is a meaningful
+# gap for an app handling clinical workflows.
+#
+# `traces_sample_rate` defaults to 0.2 (20% of requests) rather than the
+# previous 0.0: with `SENTRY_DSN` set, this project had error tracking but
+# zero performance tracing, so a real production slowdown would show up as
+# "no errors, mysteriously slow" with no trace data to diagnose it from.
+# 20% is a deliberately conservative default for a low/demo-traffic
+# portfolio deployment (full 100% tracing on real production traffic would
+# be a cost/volume decision for whoever operates that deployment); it is
+# fully overridable via `SENTRY_TRACES_SAMPLE_RATE`. This has zero effect
+# unless `SENTRY_DSN` is configured, so local dev/CI behavior is unchanged.
+SENTRY_DSN = os.getenv('SENTRY_DSN', '')
+if SENTRY_DSN:
+    sentry_sdk.init(
+        dsn=SENTRY_DSN,
+        integrations=[DjangoIntegration()],
+        traces_sample_rate=float(os.getenv('SENTRY_TRACES_SAMPLE_RATE', '0.2')),
+        send_default_pii=False,
+        environment=os.getenv('SENTRY_ENVIRONMENT', 'production' if not DEBUG else 'development'),
+    )
