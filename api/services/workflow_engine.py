@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+import logging
 from datetime import timedelta
 from typing import Any
 
 from django.db import transaction
 from django.utils import timezone
 
+from api.metrics import increment_counter
 from api.models import (
     Appointment,
     ClinicalAlert,
@@ -16,6 +18,7 @@ from api.models import (
     WorkflowRule,
 )
 
+logger = logging.getLogger('careflow.workflow')
 
 RESERVED_CONDITION_KEYS = {'all', 'any', 'none'}
 
@@ -210,6 +213,16 @@ def execute_rule_action(rule: WorkflowRule, payload: dict[str, Any]) -> dict[str
     else:
         raise ValueError(f'Unsupported action_type: {rule.action_type}')
 
+    logger.info(
+        'workflow_rule_executed',
+        extra={
+            'rule_id': rule.id,
+            'rule_name': rule.name,
+            'action_type': rule.action_type,
+            'created_id': created_id,
+        },
+    )
+
     return {
         'rule_id': rule.id,
         'rule_name': rule.name,
@@ -238,6 +251,16 @@ def process_domain_event(event: DomainEvent) -> dict[str, Any]:
         event.error_message = ''
         event.processed_at = timezone.now()
         event.save(update_fields=['status', 'error_message', 'processed_at'])
+        increment_counter('careflow_domain_events_processed_total')
+        logger.info(
+            'domain_event_processed',
+            extra={
+                'event_id': event.id,
+                'event_type': event.event_type,
+                'matched_rule_count': len(matched_actions),
+                'attempts': event.attempts,
+            },
+        )
         return {
             'event_id': event.id,
             'status': event.status,
@@ -249,6 +272,16 @@ def process_domain_event(event: DomainEvent) -> dict[str, Any]:
         event.error_message = str(exc)[:2000]
         event.processed_at = timezone.now()
         event.save(update_fields=['status', 'error_message', 'processed_at'])
+        increment_counter('careflow_domain_events_failed_total')
+        logger.warning(
+            'domain_event_failed',
+            extra={
+                'event_id': event.id,
+                'event_type': event.event_type,
+                'attempts': event.attempts,
+                'error': event.error_message,
+            },
+        )
         return {
             'event_id': event.id,
             'status': event.status,
