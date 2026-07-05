@@ -31,6 +31,10 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    # First = outermost layer, so its post-`get_response` code sees the
+    # final response status after every other middleware/view/exception
+    # handler has run. See `api/middleware.py` docstring.
+    'api.middleware.MetricsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'corsheaders.middleware.CorsMiddleware',
@@ -105,9 +109,18 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.IsAuthenticated',
     ),
+    # `Resilient*` wrappers (api/throttling.py) rather than DRF's stock
+    # `AnonRateThrottle`/`UserRateThrottle` directly: the stock classes read
+    # and write the rate-limit counter straight through `django.core.cache`
+    # with no exception handling, so a Redis outage (the `CACHES` backend
+    # whenever `REDIS_URL` is set — see below) previously propagated an
+    # unhandled `ConnectionError` out of every single throttled request,
+    # taking down the entire API surface rather than just degrading rate
+    # limiting. See `api/throttling.py` module docstring for the full
+    # rationale and confirmed reproduction.
     'DEFAULT_THROTTLE_CLASSES': (
-        'rest_framework.throttling.AnonRateThrottle',
-        'rest_framework.throttling.UserRateThrottle',
+        'api.throttling.ResilientAnonRateThrottle',
+        'api.throttling.ResilientUserRateThrottle',
     ),
     'DEFAULT_THROTTLE_RATES': {
         'anon': os.getenv('DRF_THROTTLE_ANON', '60/minute'),
