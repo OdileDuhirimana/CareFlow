@@ -462,3 +462,16 @@ class HospitalFlowOverviewSerializer(serializers.Serializer):
     kpis = HospitalFlowKpiSerializer()
     admissions_by_status = serializers.DictField(child=serializers.IntegerField())
     labs_by_status = serializers.DictField(child=serializers.IntegerField())
+
+
+class LogoutRequestSerializer(serializers.Serializer):
+    """Input contract for POST /api/auth/logout/.
+
+    The refresh token must be supplied explicitly (not read from a cookie)
+    because this API is stateless/bearer-token based — the client is
+    responsible for holding and submitting the token it wants revoked.
+    """
+
+    refresh = serializers.CharField(
+        help_text='The refresh token to invalidate. Required to log out.',
+    )

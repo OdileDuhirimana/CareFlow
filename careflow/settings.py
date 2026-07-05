@@ -25,6 +25,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'rest_framework.authtoken',
+    'rest_framework_simplejwt.token_blacklist',
     'drf_spectacular',
     'corsheaders',
     'api',
@@ -149,6 +150,14 @@ REST_FRAMEWORK = {
     'DEFAULT_THROTTLE_RATES': {
         'anon': os.getenv('DRF_THROTTLE_ANON', '60/minute'),
         'user': os.getenv('DRF_THROTTLE_USER', '300/minute'),
+        # Scoped throttles for the two classic abuse targets that a blanket
+        # anon/user rate does not adequately protect: the public prediction
+        # endpoint (scraping/model-abuse) and the JWT token endpoints
+        # (credential stuffing / brute force). See `api/views.py`
+        # `PredictHealthRiskView`, `ThrottledTokenObtainPairView`,
+        # `ThrottledTokenRefreshView`.
+        'predict_health_risk': os.getenv('DRF_THROTTLE_PREDICT', '20/minute'),
+        'token_obtain': os.getenv('DRF_THROTTLE_TOKEN', '10/minute'),
     },
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
 }
@@ -157,6 +166,11 @@ SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=30),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
     'SIGNING_KEY': os.getenv('JWT_SECRET', SECRET_KEY),
+    # BLACKLIST_AFTER_ROTATION only matters if ROTATE_REFRESH_TOKENS is
+    # enabled (it isn't here); left explicit for clarity since the
+    # token_blacklist app is now installed for the logout endpoint
+    # (`POST /api/auth/logout/`, see `api/views.py::LogoutView`).
+    'BLACKLIST_AFTER_ROTATION': False,
 }
 
 # Celery

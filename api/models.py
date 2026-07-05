@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth import get_user_model
+from django.db.models import Q
 from django.utils import timezone
 
 
@@ -123,7 +124,40 @@ class ClinicalAlert(models.Model):
         return f"{self.get_severity_display()} alert for {self.patient.name}"
 
 
+class PatientCheckInQuerySet(models.QuerySet):
+    def urgent(self):
+        """Check-ins whose vitals/symptoms cross a clinically-urgent threshold.
+
+        This exact five-clause `Q()` filter was previously copy-pasted
+        verbatim in three places (`PatientCheckInViewSet.get_queryset`,
+        `ImpactAnalyticsView.get`, and `portfolio_home`) — a confirmed
+        CODE-04 DRY violation. Centralizing it here means the definition of
+        "urgent" lives in exactly one place, and the clinical thresholds
+        themselves are named constants on `PatientCheckIn` (see CODE-06)
+        rather than magic numbers repeated at every call site.
+        """
+        return self.filter(
+            Q(symptom_severity__gte=PatientCheckIn.SEVERE_SYMPTOM_SEVERITY)
+            | Q(oxygen_saturation__lt=PatientCheckIn.LOW_OXYGEN_SATURATION)
+            | Q(systolic_bp__gte=PatientCheckIn.CRITICAL_SYSTOLIC_BP)
+            | Q(heart_rate__gte=PatientCheckIn.HIGH_HEART_RATE)
+            | (Q(mood_score__lte=PatientCheckIn.LOW_MOOD_SCORE) & Q(medication_taken=False))
+        )
+
+
 class PatientCheckIn(models.Model):
+    # Named clinical thresholds (CODE-06) used both by `PatientCheckInQuerySet.urgent()`
+    # above and by `api.services.alerts.checkin_alert_payload` to decide whether a
+    # check-in should raise an automatic clinical alert. Keeping them here (as
+    # constants on the model they describe) rather than inline in each
+    # consumer means a clinical-threshold policy change is a one-line edit
+    # applied everywhere consistently.
+    SEVERE_SYMPTOM_SEVERITY = 8
+    LOW_OXYGEN_SATURATION = 92
+    CRITICAL_SYSTOLIC_BP = 180
+    HIGH_HEART_RATE = 130
+    LOW_MOOD_SCORE = 2
+
     patient = models.ForeignKey(Patient, on_delete=models.CASCADE, related_name='checkins')
     submitted_by = models.ForeignKey(get_user_model(), on_delete=models.SET_NULL, null=True, blank=True)
     symptom_severity = models.PositiveSmallIntegerField(default=0)
@@ -134,6 +168,8 @@ class PatientCheckIn(models.Model):
     heart_rate = models.PositiveIntegerField(null=True, blank=True)
     notes = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    objects = PatientCheckInQuerySet.as_manager()
 
     class Meta:
         ordering = ['-created_at']
