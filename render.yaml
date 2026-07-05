@@ -14,6 +14,8 @@ services:
         value: https://*.onrender.com
       - key: SECURE_SSL_REDIRECT
         value: "true"
+      - key: DATABASE_SSL_REQUIRE
+        value: "true"
       - key: CORS_ALLOWED_ORIGINS
         sync: false
       - key: SECRET_KEY
@@ -24,7 +26,102 @@ services:
         fromDatabase:
           name: careflow-db
           property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: careflow-redis
+          property: connectionString
+      - key: SENTRY_TRACES_SAMPLE_RATE
+        value: "0.2"
+
+  # Background worker for the Celery domain-event pipeline (see
+  # `careflow/celery.py`, `api/tasks.py`). Shares the exact same Docker
+  # image/environment as the web service; only the container `command`
+  # differs. NOT independently verified live in this environment — see
+  # README "Known Tradeoffs" / final delivery report for the honest status
+  # of everything in this file.
+  - type: worker
+    name: careflow-worker
+    env: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    dockerCommand: celery -A careflow worker --loglevel=info --concurrency=2
+    envVars:
+      - key: DEBUG
+        value: "false"
+      - key: ALLOWED_HOSTS
+        value: .onrender.com
+      - key: DATABASE_SSL_REQUIRE
+        value: "true"
+      # Must match the web service's values exactly (same SIMPLE_JWT
+      # signing key, same Django SECRET_KEY) so tokens/sessions created by
+      # one process are valid when read by the other. Render does not
+      # currently let a Blueprint share one `generateValue` across two
+      # services, so these have to be set manually to the same values as
+      # `careflow-api` after first deploy — documented here rather than
+      # silently generating a second, incompatible key pair.
+      - key: SECRET_KEY
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: DATABASE_URL
+        fromDatabase:
+          name: careflow-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: careflow-redis
+          property: connectionString
+
+  # Shared Redis instance backing both the web service's cache/throttle
+  # storage and the worker's Celery broker (see `careflow/settings.py`
+  # `REDIS_URL` / `CACHES` / `CELERY_BROKER_URL`).
+  - type: redis
+    name: careflow-redis
+    plan: free
+    ipAllowList: []
+
+  # Second, independently-deployable environment for pre-production
+  # verification. Intentionally a separate web service + separate database
+  # (never shares data with production) so a migration or a bad deploy can
+  # be caught before it reaches `careflow-api`. This config has NOT been
+  # provisioned or verified against a live Render account — writing it is
+  # the achievable-in-this-pass part of DEV-03 (environment separation);
+  # actually standing it up requires a Render account action outside this
+  # environment's reach.
+  - type: web
+    name: careflow-api-staging
+    env: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /health/ready/
+    envVars:
+      - key: DEBUG
+        value: "false"
+      - key: ALLOWED_HOSTS
+        value: .onrender.com
+      - key: CSRF_TRUSTED_ORIGINS
+        value: https://*.onrender.com
+      - key: SECURE_SSL_REDIRECT
+        value: "true"
+      - key: DATABASE_SSL_REQUIRE
+        value: "true"
+      - key: SENTRY_ENVIRONMENT
+        value: staging
+      - key: CORS_ALLOWED_ORIGINS
+        sync: false
+      - key: SECRET_KEY
+        generateValue: true
+      - key: JWT_SECRET
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: careflow-db-staging
+          property: connectionString
 
 databases:
   - name: careflow-db
+    plan: free
+  - name: careflow-db-staging
     plan: free

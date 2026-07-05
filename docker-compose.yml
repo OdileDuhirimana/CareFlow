@@ -7,6 +7,7 @@ services:
     env_file: .env
     environment:
       - DATABASE_URL=postgres://careflow:careflow@db:5432/careflow
+      - REDIS_URL=redis://redis:6379/0
       - DEBUG=${DEBUG:-false}
       - ALLOWED_HOSTS=${ALLOWED_HOSTS:-*}
       - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-}
@@ -14,11 +15,71 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      redis:
+        condition: service_healthy
     ports:
       - "8000:8000"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health/ready/"]
       interval: 30s
+      timeout: 5s
+      retries: 5
+
+  # Celery worker for the domain-event background-processing pipeline (see
+  # `careflow/celery.py`, `api/tasks.py`). Runs the exact same image as
+  # `web`; only the container command differs. Setting `REDIS_URL` here
+  # (matching `web`) is what actually switches `emit_domain_event` from
+  # synchronous in-request processing to genuine async dispatch — see
+  # `careflow/settings.py`'s `CELERY_TASK_ALWAYS_EAGER`.
+  worker:
+    build: .
+    container_name: careflow_worker
+    command: celery -A careflow worker --loglevel=info --concurrency=2
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      - DATABASE_URL=postgres://careflow:careflow@db:5432/careflow
+      - REDIS_URL=redis://redis:6379/0
+      - DEBUG=${DEBUG:-false}
+      - ALLOWED_HOSTS=${ALLOWED_HOSTS:-*}
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # Optional scheduler for the periodic `process-pending-domain-events`
+  # sweep (`CELERY_BEAT_SCHEDULE` in settings) — the retry/backoff safety
+  # net for any event a worker failed or missed. Not required for the
+  # primary async dispatch path to work; safe to scale to zero replicas if
+  # only manual/on-demand sweeping (`POST /api/v1/domain-events/process-pending/`)
+  # is needed.
+  beat:
+    build: .
+    container_name: careflow_beat
+    command: celery -A careflow beat --loglevel=info
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      - DATABASE_URL=postgres://careflow:careflow@db:5432/careflow
+      - REDIS_URL=redis://redis:6379/0
+      - DEBUG=${DEBUG:-false}
+      - ALLOWED_HOSTS=${ALLOWED_HOSTS:-*}
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  redis:
+    image: redis:7-alpine
+    container_name: careflow_redis
+    restart: unless-stopped
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
       timeout: 5s
       retries: 5
 
@@ -42,3 +103,4 @@ services:
 
 volumes:
   pgdata:
+  redisdata:

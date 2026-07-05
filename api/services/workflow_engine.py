@@ -263,9 +263,29 @@ def emit_domain_event(
     source: str = '',
     auto_process: bool = True,
 ) -> DomainEvent:
+    """Record a domain event and (optionally) dispatch it for processing.
+
+    Why this dispatches to a Celery task instead of calling
+    `process_domain_event` inline: workflow-rule matching/execution
+    (creating alerts, appointments, referrals) previously ran synchronously
+    inside the request/response cycle for every clinical write (admission,
+    discharge, triage, check-in, lab completion) — a confirmed PERF-03
+    finding, since a slow or failing rule action added latency and risk
+    directly to those writes. Dispatching via Celery moves that work off
+    the request thread entirely in any environment with `REDIS_URL`
+    configured (production/docker-compose); see `careflow/settings.py`'s
+    `CELERY_TASK_ALWAYS_EAGER` for why local dev/CI (no Redis) still run it
+    synchronously with zero extra infrastructure. `process_pending_domain_events`
+    remains the retry/backoff sweep for anything a worker fails or misses.
+    """
     event = DomainEvent.objects.create(event_type=event_type, source=source, payload=payload or {})
     if auto_process:
-        process_domain_event(event)
+        # Imported locally to avoid a module-load-time circular import
+        # (`api.tasks` imports `process_domain_event` from this module
+        # inside its own task bodies — see `api/tasks.py` docstring).
+        from api.tasks import process_domain_event_task
+
+        process_domain_event_task.delay(event.id)
     return event
 
 

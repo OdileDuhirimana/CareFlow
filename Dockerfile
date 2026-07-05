@@ -25,13 +25,14 @@ COPY . .
 RUN useradd -m appuser && chown -R appuser:appuser /app
 USER appuser
 
+ENV PORT=8000
 EXPOSE 8000
 
 ENTRYPOINT ["/app/entrypoint.sh"]
 
 # Gunicorn entrypoint
 CMD gunicorn careflow.wsgi:application \
-    --bind 0.0.0.0:8000 \
+    --bind 0.0.0.0:${PORT} \
     --workers ${GUNICORN_WORKERS:-3} \
     --threads ${GUNICORN_THREADS:-2} \
     --timeout ${GUNICORN_TIMEOUT:-60} \

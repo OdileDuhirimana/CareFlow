@@ -68,19 +68,36 @@ WSGI_APPLICATION = 'careflow.wsgi.application'
 ASGI_APPLICATION = 'careflow.asgi.application'
 
 # Database
+#
+# `DATABASE_SSL_REQUIRE` is deliberately its own setting rather than derived
+# from `DEBUG` (as `ssl_require=not DEBUG` previously did). Whether a
+# Postgres connection needs to be encrypted is a property of *where the
+# database actually lives* (a managed Render Postgres reachable over the
+# public internet needs SSL; a Postgres container on the same Docker
+# network or in a CI service container does not support or need it), which
+# is orthogonal to `DEBUG`. The previous coupling meant every non-DEBUG
+# Postgres target — including docker-compose's own local `db` service and
+# CI's Postgres service container, both of which run with `DEBUG=false` —
+# would try `sslmode=require` against a database that doesn't speak SSL and
+# fail to connect outright. `render.yaml` sets `DATABASE_SSL_REQUIRE=true`
+# explicitly for the one target that actually needs it.
 DATABASE_URL = os.getenv('DATABASE_URL')
+DATABASE_SSL_REQUIRE = os.getenv('DATABASE_SSL_REQUIRE', 'false').lower() == 'true'
 if DATABASE_URL:
     DATABASES = {
-        'default': dj_database_url.parse(DATABASE_URL, conn_max_age=600, ssl_require=not DEBUG)
+        'default': dj_database_url.parse(DATABASE_URL, conn_max_age=600, ssl_require=DATABASE_SSL_REQUIRE)
     }
     DATABASES['default']['CONN_HEALTH_CHECKS'] = True
 else:
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'db.sqlite3',
+    if DEBUG:
+        DATABASES = {
+            'default': {
+                'ENGINE': 'django.db.backends.sqlite3',
+                'NAME': BASE_DIR / 'db.sqlite3',
+            }
         }
-    }
+    else:
+        raise ImproperlyConfigured('DATABASE_URL must be set when DEBUG=false')
 
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
@@ -100,6 +117,13 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Redis URL, shared by the cache backend (careflow/settings.py CACHES) and
+# the Celery broker/result backend below. Unset in local dev/CI, which is
+# what makes both fall back to single-process-safe defaults (LocMemCache,
+# Celery eager mode) with zero extra infrastructure required to run this
+# project locally.
+REDIS_URL = os.getenv('REDIS_URL', '')
 
 # DRF
 REST_FRAMEWORK = {
@@ -133,6 +157,43 @@ SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=30),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
     'SIGNING_KEY': os.getenv('JWT_SECRET', SECRET_KEY),
+}
+
+# Celery
+#
+# Why `CELERY_TASK_ALWAYS_EAGER` defaults to True when `REDIS_URL` is unset:
+# local dev and CI never run a Celery broker or worker process, and
+# shouldn't need to just to exercise domain-event-driven behavior (triage
+# alerts, auto-referrals, etc.) in tests. "Eager" mode executes tasks
+# synchronously in-process the moment `.delay()` is called — functionally
+# equivalent to the previous purely-synchronous `auto_process=True` behavior
+# this replaces (see `api/services/workflow_engine.py::emit_domain_event`)
+# — so the test suite and a laptop `runserver` both keep working with zero
+# extra infrastructure. In docker-compose/production, `REDIS_URL` is set,
+# eager mode turns off, and `emit_domain_event` genuinely dispatches to a
+# separate `celery worker` process via the shared Redis broker, which is the
+# actual fix for PERF-03 (synchronous in-request workflow processing).
+# `process_pending_domain_events` remains available as the retry/backoff
+# path for anything that fails or falls through (e.g. a worker outage).
+CELERY_BROKER_URL = os.getenv('CELERY_BROKER_URL', REDIS_URL or 'redis://localhost:6379/0')
+CELERY_RESULT_BACKEND = os.getenv('CELERY_RESULT_BACKEND', CELERY_BROKER_URL)
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TASK_ALWAYS_EAGER = os.getenv(
+    'CELERY_TASK_ALWAYS_EAGER', 'false' if REDIS_URL else 'true'
+).lower() == 'true'
+CELERY_TASK_EAGER_PROPAGATES = True
+CELERY_TASK_TIME_LIMIT = int(os.getenv('CELERY_TASK_TIME_LIMIT', '60'))
+CELERY_WORKER_MAX_TASKS_PER_CHILD = 200
+# Belt-and-suspenders retry path: even with a healthy worker fleet, a
+# scheduled beat process (optional; see docker-compose `beat` service) can
+# periodically sweep any event a worker crashed while processing.
+CELERY_BEAT_SCHEDULE = {
+    'process-pending-domain-events': {
+        'task': 'api.process_pending_domain_events',
+        'schedule': int(os.getenv('CELERY_BEAT_SWEEP_SECONDS', '300')),
+    },
 }
 
 SPECTACULAR_SETTINGS = {
