@@ -8,6 +8,46 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    # A real Postgres service container, not SQLite, backs CI. Two reasons:
+    # (1) `careflow/settings.py` fails fast with `ImproperlyConfigured` when
+    # `DEBUG=false` and `DATABASE_URL` is unset — a deliberate fail-closed
+    # guard against accidentally deploying with an unconfigured database —
+    # so CI (which always runs with `DEBUG=false`) must provide one; (2)
+    # Postgres is the actual production/target-deployment database
+    # (Render), so testing against it here catches Postgres-specific
+    # behavior differences (constraint enforcement, concurrent-write
+    # semantics) that SQLite's single-writer model would hide.
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: careflow
+          POSTGRES_PASSWORD: careflow
+          POSTGRES_DB: careflow_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U careflow -d careflow_ci"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      SECRET_KEY: this-is-a-long-random-test-secret-key-value-for-ci-2026
+      DEBUG: 'false'
+      ALLOWED_HOSTS: localhost,127.0.0.1,testserver
+      DATABASE_URL: postgres://careflow:careflow@localhost:5432/careflow_ci
+      # `careflow/settings.py` defaults SECURE_SSL_REDIRECT to true whenever
+      # DEBUG=false (the correct default for a real deployment sitting
+      # behind a TLS-terminating proxy). Django's test client makes plain
+      # HTTP requests with no `X-Forwarded-Proto` header, so under that
+      # default every test-client request gets 301-redirected instead of
+      # reaching the view — a real bug this pass caught by actually running
+      # the suite against Postgres with DEBUG=false end-to-end (matching
+      # real CI conditions) rather than only against the local SQLite/
+      # DEBUG=true default. Explicitly false only for the test-execution
+      # step; "Django deploy checks" below deliberately overrides this back
+      # to true to verify the production security-check machinery itself.
+      SECURE_SSL_REDIRECT: 'false'
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python
@@ -19,39 +59,49 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
       - name: Run migrations
-        env:
-          SECRET_KEY: this-is-a-long-random-test-secret-key-value-for-ci-2026
-          DEBUG: 'false'
-          ALLOWED_HOSTS: localhost,127.0.0.1,testserver
         run: |
           python manage.py migrate --noinput
       - name: Configure roles and seed demo data
-        env:
-          SECRET_KEY: this-is-a-long-random-test-secret-key-value-for-ci-2026
-          DEBUG: 'false'
-          ALLOWED_HOSTS: localhost,127.0.0.1,testserver
         run: |
           python manage.py setup_roles
           python manage.py seed_demo_data --password ci-demo-pass
       - name: Django deploy checks
         env:
-          SECRET_KEY: this-is-a-long-random-test-secret-key-value-for-ci-2026
-          DEBUG: 'false'
-          ALLOWED_HOSTS: localhost,127.0.0.1,testserver
           SECURE_SSL_REDIRECT: 'true'
         run: |
           python manage.py check --deploy
       - name: Validate OpenAPI schema
-        env:
-          SECRET_KEY: this-is-a-long-random-test-secret-key-value-for-ci-2026
-          DEBUG: 'false'
-          ALLOWED_HOSTS: localhost,127.0.0.1,testserver
         run: |
           python manage.py spectacular --validate --file /tmp/schema.yml
-      - name: Run tests
-        env:
-          SECRET_KEY: this-is-a-long-random-test-secret-key-value-for-ci-2026
-          DEBUG: 'false'
-          ALLOWED_HOSTS: localhost,127.0.0.1,testserver
+      - name: Check OpenAPI schema for undocumented drift
+        # Contract test: fails if the generated schema differs from the
+        # checked-in snapshot (`docs/schema/openapi.yml`), catching
+        # accidental breaking/undocumented API changes before they ship.
+        # A deliberate API change must regenerate the snapshot in the same
+        # PR (see `scripts/generate_openapi_snapshot.sh`) — see README's
+        # "API Versioning & Deprecation Policy" section for the full policy.
         run: |
-          python manage.py test -v 2
+          python manage.py spectacular --file /tmp/schema-current.yml
+          diff -u docs/schema/openapi.yml /tmp/schema-current.yml || \
+            (echo "::error::OpenAPI schema drifted from docs/schema/openapi.yml. Run scripts/generate_openapi_snapshot.sh and commit the result if this change was intentional." && exit 1)
+      - name: Run tests with coverage
+        run: |
+          coverage run --source='api' manage.py test -v 2
+          coverage report -m --fail-under=70
+          coverage xml
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+    steps:
+      - name: Trigger Render deploy hook
+        env:
+          RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        run: |
+          if [ -z "$RENDER_DEPLOY_HOOK_URL" ]; then
+            echo "RENDER_DEPLOY_HOOK_URL secret is not set — skipping deploy trigger."
+            echo "Configure it in repo Settings > Secrets to enable CD to Render."
+            exit 0
+          fi
+          curl --fail --silent --show-error -X POST "$RENDER_DEPLOY_HOOK_URL"

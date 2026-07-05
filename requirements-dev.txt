@@ -1,0 +1,9 @@
+# Development/CI-only dependencies — never installed in the production
+# Docker image (Dockerfile only installs requirements.txt). Kept separate
+# so the production image doesn't carry tooling it never runs.
+-r requirements.txt
+
+# Used by scripts/load_test.py / scripts/locustfile.py (see docs/load-test.md)
+# to produce the load-testing findings referenced in the README. Not a
+# runtime dependency of the application itself.
+locust==2.44.4

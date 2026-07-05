@@ -345,6 +345,18 @@ Starts `web` (Gunicorn), `worker` (Celery, domain-event processing),
 `redis` (Celery broker + shared cache/throttle backend), and `db`
 (Postgres).
 
+## Development-Only Tooling
+
+```bash
+pip install -r requirements-dev.txt   # adds locust, on top of requirements.txt
+locust -f scripts/locustfile.py --host http://127.0.0.1:8000 --headless \
+    --users 20 --spawn-rate 5 --run-time 30s
+```
+
+See `docs/load-test.md` for findings from a run of this against a local
+dev server (explicitly documented as a dev-environment approximation, not
+a production benchmark).
+
 ## Key Endpoints
 
 All resource/business endpoints are versioned under `/api/v1/` — see "API Versioning & Deprecation Policy" below.
@@ -456,7 +468,7 @@ This command runs migrations, configures roles, seeds realistic demo data, and v
 - Startup entrypoint runs `migrate` and `collectstatic` automatically
 - Production security settings are enabled when `DEBUG=false`
 - Startup fails in production if `SECRET_KEY` or `DATABASE_URL` is not explicitly set
-- CI runs migrations, role setup, demo seed, deploy checks, schema validation, and tests
+- CI runs migrations, role setup, demo seed, deploy checks, schema validation, an OpenAPI drift check, and tests with coverage against a real Postgres service container (not SQLite — see "Known Tradeoffs"), and (on `main`/`master`) a Render deploy-hook call gated on the test job passing
 - Configure `.env` from `.env.example`
 - `render.yaml` defines three services (`careflow-api` production, `careflow-worker` Celery, `careflow-api-staging` — a second, independent environment) plus two managed Postgres databases and a shared Redis instance. **Only the code/config for staging has been written in this pass — it has not been provisioned or verified against a live Render account.** Standing it up is tracked in "Future Improvements."
 
@@ -486,11 +498,22 @@ If a deploy to `careflow-api` introduces a regression:
 3. **Verify the rollback**: hit `GET /health/ready/` (confirms DB
    connectivity) and `GET /api/docs/` (confirms the app booted correctly),
    then re-run the specific request/flow that surfaced the regression.
-4. **This is a documented procedure, not a verified one.** No actual
+4. **Root-cause before redeploying forward.** CI's test suite (93%
+   coverage, gated at 70%) and the OpenAPI schema-drift check exist
+   specifically so an obvious regression is caught before it reaches this
+   point — if one still got through, add a regression test for it before
+   the next forward deploy (see the `test_*` regression tests added in
+   this remediation pass for the pattern, e.g.
+   `test_clinician_can_mark_status_on_another_clinicians_medication_order`).
+5. **This is a documented procedure, not a verified one.** No actual
    rollback has been performed against a live Render deployment from this
    environment — this runbook describes the mechanism Render's dashboard
    provides and the general Django migration-safety reasoning, not a
    tested incident response.
+
+### Continuous Deployment
+
+`.github/workflows/ci.yml` includes a `deploy` job that runs only after the `test` job succeeds, and only on pushes to `main`/`master` (not on pull requests). It calls Render's deploy hook URL, stored as the `RENDER_DEPLOY_HOOK_URL` repository secret — nothing is deployed if that secret is unset, so forks/CI runs without the secret configured simply skip the step rather than failing.
 
 ## Deploy On Render
 

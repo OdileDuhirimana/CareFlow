@@ -1,0 +1,4729 @@
+openapi: 3.0.3
+info:
+  title: CareFlow API
+  version: 1.0.0
+  description: Predictive Healthcare API
+paths:
+  /api/schema/:
+    get:
+      operationId: schema_retrieve
+      description: |-
+        OpenApi3 schema for this API. Format can be selected via content negotiation.
+
+        - YAML: application/vnd.oai.openapi
+        - JSON: application/vnd.oai.openapi+json
+      parameters:
+      - in: query
+        name: format
+        schema:
+          type: string
+          enum:
+          - json
+          - yaml
+      - in: query
+        name: lang
+        schema:
+          type: string
+          enum:
+          - af
+          - ar
+          - ar-dz
+          - ast
+          - az
+          - be
+          - bg
+          - bn
+          - br
+          - bs
+          - ca
+          - ckb
+          - cs
+          - cy
+          - da
+          - de
+          - dsb
+          - el
+          - en
+          - en-au
+          - en-gb
+          - eo
+          - es
+          - es-ar
+          - es-co
+          - es-mx
+          - es-ni
+          - es-ve
+          - et
+          - eu
+          - fa
+          - fi
+          - fr
+          - fy
+          - ga
+          - gd
+          - gl
+          - he
+          - hi
+          - hr
+          - hsb
+          - hu
+          - hy
+          - ia
+          - id
+          - ig
+          - io
+          - is
+          - it
+          - ja
+          - ka
+          - kab
+          - kk
+          - km
+          - kn
+          - ko
+          - ky
+          - lb
+          - lt
+          - lv
+          - mk
+          - ml
+          - mn
+          - mr
+          - ms
+          - my
+          - nb
+          - ne
+          - nl
+          - nn
+          - os
+          - pa
+          - pl
+          - pt
+          - pt-br
+          - ro
+          - ru
+          - sk
+          - sl
+          - sq
+          - sr
+          - sr-latn
+          - sv
+          - sw
+          - ta
+          - te
+          - tg
+          - th
+          - tk
+          - tr
+          - tt
+          - udm
+          - ug
+          - uk
+          - ur
+          - uz
+          - vi
+          - zh-hans
+          - zh-hant
+      tags:
+      - schema
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/vnd.oai.openapi:
+              schema:
+                type: object
+                additionalProperties: {}
+            application/yaml:
+              schema:
+                type: object
+                additionalProperties: {}
+            application/vnd.oai.openapi+json:
+              schema:
+                type: object
+                additionalProperties: {}
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/admissions/:
+    get:
+      operationId: v1_admissions_list
+      parameters:
+      - in: query
+        name: active
+        schema:
+          type: boolean
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - in: query
+        name: patient
+        schema:
+          type: number
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - admitted
+          - discharged
+          - transferred
+        description: |-
+          * `admitted` - Admitted
+          * `discharged` - Discharged
+          * `transferred` - Transferred
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAdmissionList'
+          description: ''
+    post:
+      operationId: v1_admissions_create
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Admission'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Admission'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Admission'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Admission'
+          description: ''
+  /api/v1/admissions/{id}/:
+    get:
+      operationId: v1_admissions_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this admission.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Admission'
+          description: ''
+    put:
+      operationId: v1_admissions_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this admission.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Admission'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Admission'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Admission'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Admission'
+          description: ''
+    patch:
+      operationId: v1_admissions_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this admission.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedAdmission'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedAdmission'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedAdmission'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Admission'
+          description: ''
+    delete:
+      operationId: v1_admissions_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this admission.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/admissions/{id}/discharge/:
+    post:
+      operationId: v1_admissions_discharge_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this admission.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdmissionDischargeRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AdmissionDischargeRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AdmissionDischargeRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Admission'
+          description: ''
+  /api/v1/admissions/{id}/transfer/:
+    post:
+      operationId: v1_admissions_transfer_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this admission.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Admission'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Admission'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Admission'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Admission'
+          description: ''
+  /api/v1/alerts/:
+    get:
+      operationId: v1_alerts_list
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - in: query
+        name: resolved
+        schema:
+          type: boolean
+      - in: query
+        name: severity
+        schema:
+          type: string
+          enum:
+          - critical
+          - high
+          - medium
+        description: |-
+          * `medium` - Medium
+          * `high` - High
+          * `critical` - Critical
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedClinicalAlertList'
+          description: ''
+  /api/v1/alerts/{id}/:
+    get:
+      operationId: v1_alerts_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this clinical alert.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClinicalAlert'
+          description: ''
+    patch:
+      operationId: v1_alerts_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this clinical alert.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedClinicalAlert'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedClinicalAlert'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedClinicalAlert'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClinicalAlert'
+          description: ''
+  /api/v1/analytics/assessments/export.csv:
+    get:
+      operationId: v1_analytics_assessments_export.csv_retrieve
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: CSV export of risk assessments
+  /api/v1/analytics/hospital-flow/:
+    get:
+      operationId: v1_analytics_hospital_flow_retrieve
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HospitalFlowOverview'
+          description: ''
+  /api/v1/analytics/impact/:
+    get:
+      operationId: v1_analytics_impact_retrieve
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImpactOverview'
+          description: ''
+  /api/v1/analytics/overview/:
+    get:
+      operationId: v1_analytics_overview_retrieve
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnalyticsOverview'
+          description: ''
+  /api/v1/appointments/:
+    get:
+      operationId: v1_appointments_list
+      parameters:
+      - in: query
+        name: date_from
+        schema:
+          type: string
+          format: date
+      - in: query
+        name: date_to
+        schema:
+          type: string
+          format: date
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - in: query
+        name: patient
+        schema:
+          type: number
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - cancelled
+          - completed
+          - no_show
+          - scheduled
+        description: |-
+          * `scheduled` - Scheduled
+          * `completed` - Completed
+          * `cancelled` - Cancelled
+          * `no_show` - No Show
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAppointmentList'
+          description: ''
+    post:
+      operationId: v1_appointments_create
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Appointment'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Appointment'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Appointment'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Appointment'
+          description: ''
+  /api/v1/appointments/{id}/:
+    get:
+      operationId: v1_appointments_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this appointment.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Appointment'
+          description: ''
+    put:
+      operationId: v1_appointments_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this appointment.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Appointment'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Appointment'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Appointment'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Appointment'
+          description: ''
+    patch:
+      operationId: v1_appointments_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this appointment.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedAppointment'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedAppointment'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedAppointment'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Appointment'
+          description: ''
+    delete:
+      operationId: v1_appointments_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this appointment.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/assessments/:
+    get:
+      operationId: v1_assessments_list
+      parameters:
+      - in: query
+        name: date_from
+        schema:
+          type: string
+          format: date
+      - in: query
+        name: date_to
+        schema:
+          type: string
+          format: date
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - in: query
+        name: patient
+        schema:
+          type: number
+      - in: query
+        name: risk_level
+        schema:
+          type: string
+          enum:
+          - Critical
+          - High
+          - Low
+          - Medium
+        description: |-
+          * `Low` - Low
+          * `Medium` - Medium
+          * `High` - High
+          * `Critical` - Critical
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedRiskAssessmentList'
+          description: ''
+  /api/v1/assessments/{id}/:
+    get:
+      operationId: v1_assessments_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this risk assessment.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RiskAssessment'
+          description: ''
+  /api/v1/auth/logout/:
+    post:
+      operationId: v1_auth_logout_create
+      description: |-
+        Revoke a refresh token, closing the gap where JWTs could only expire.
+
+        Without this endpoint, a stolen or leaked refresh token remains valid
+        until its natural expiry (1 day, `SIMPLE_JWT['REFRESH_TOKEN_LIFETIME']`)
+        with no way to force it invalid sooner — a real security gap for a
+        healthcare-adjacent API. This blacklists the *refresh* token via
+        `rest_framework_simplejwt.token_blacklist`; the short-lived access token
+        (30 minutes) is left to expire naturally, which is the standard
+        SimpleJWT blacklist pattern (blacklisting every access token would
+        require checking the blacklist on every single authenticated request).
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LogoutRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/LogoutRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/LogoutRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '205':
+          description: Refresh token blacklisted.
+  /api/v1/auth/me/:
+    get:
+      operationId: v1_auth_me_retrieve
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CurrentUserProfile'
+          description: ''
+  /api/v1/auth/token/:
+    post:
+      operationId: v1_auth_token_create
+      description: |-
+        JWT login, with a dedicated tight throttle scope.
+
+        The default blanket `anon` throttle (60/minute) is shared across every
+        unauthenticated endpoint, which is too permissive for a credential-entry
+        endpoint specifically — it is the classic brute-force/credential-stuffing
+        target. `throttle_scope`/`ScopedRateThrottle` gives this endpoint its own
+        independent budget (`DRF_THROTTLE_TOKEN`, see `careflow/settings.py`)
+        without affecting the general anonymous rate used elsewhere.
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenObtainPair'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenObtainPair'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenObtainPair'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenObtainPair'
+          description: ''
+  /api/v1/auth/token/refresh/:
+    post:
+      operationId: v1_auth_token_refresh_create
+      description: Token refresh, throttled the same way as token obtain (see above).
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenRefresh'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenRefresh'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenRefresh'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenRefresh'
+          description: ''
+  /api/v1/beds/:
+    get:
+      operationId: v1_beds_list
+      parameters:
+      - in: query
+        name: available_only
+        schema:
+          type: boolean
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - available
+          - cleaning
+          - maintenance
+          - occupied
+        description: |-
+          * `available` - Available
+          * `occupied` - Occupied
+          * `cleaning` - Cleaning
+          * `maintenance` - Maintenance
+      - in: query
+        name: ward
+        schema:
+          type: number
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedBedList'
+          description: ''
+    post:
+      operationId: v1_beds_create
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Bed'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Bed'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Bed'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Bed'
+          description: ''
+  /api/v1/beds/{id}/:
+    get:
+      operationId: v1_beds_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this bed.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Bed'
+          description: ''
+    put:
+      operationId: v1_beds_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this bed.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Bed'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Bed'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Bed'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Bed'
+          description: ''
+    patch:
+      operationId: v1_beds_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this bed.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedBed'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedBed'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedBed'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Bed'
+          description: ''
+    delete:
+      operationId: v1_beds_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this bed.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/checkins/:
+    get:
+      operationId: v1_checkins_list
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - in: query
+        name: patient
+        schema:
+          type: number
+      - in: query
+        name: urgent
+        schema:
+          type: boolean
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedPatientCheckInList'
+          description: ''
+    post:
+      operationId: v1_checkins_create
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatientCheckIn'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatientCheckIn'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatientCheckIn'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CheckInResponse'
+          description: ''
+  /api/v1/checkins/{id}/:
+    get:
+      operationId: v1_checkins_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this patient check in.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PatientCheckIn'
+          description: ''
+    put:
+      operationId: v1_checkins_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this patient check in.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatientCheckIn'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatientCheckIn'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatientCheckIn'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PatientCheckIn'
+          description: ''
+    patch:
+      operationId: v1_checkins_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this patient check in.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedPatientCheckIn'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedPatientCheckIn'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedPatientCheckIn'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PatientCheckIn'
+          description: ''
+    delete:
+      operationId: v1_checkins_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this patient check in.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/community-resources/:
+    get:
+      operationId: v1_community_resources_list
+      parameters:
+      - in: query
+        name: active
+        schema:
+          type: boolean
+      - in: query
+        name: category
+        schema:
+          type: string
+          enum:
+          - chronic_care
+          - financial
+          - food_support
+          - housing
+          - mental_health
+          - transport
+          - wellness
+        description: |-
+          * `mental_health` - Mental Health
+          * `food_support` - Food Support
+          * `transport` - Transport
+          * `financial` - Financial Aid
+          * `housing` - Housing
+          * `chronic_care` - Chronic Care
+          * `wellness` - Wellness
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedCommunityResourceList'
+          description: ''
+    post:
+      operationId: v1_community_resources_create
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CommunityResource'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CommunityResource'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CommunityResource'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommunityResource'
+          description: ''
+  /api/v1/community-resources/{id}/:
+    get:
+      operationId: v1_community_resources_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this community resource.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommunityResource'
+          description: ''
+    put:
+      operationId: v1_community_resources_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this community resource.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CommunityResource'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CommunityResource'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CommunityResource'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommunityResource'
+          description: ''
+    patch:
+      operationId: v1_community_resources_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this community resource.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedCommunityResource'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedCommunityResource'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedCommunityResource'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommunityResource'
+          description: ''
+    delete:
+      operationId: v1_community_resources_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this community resource.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/domain-events/:
+    get:
+      operationId: v1_domain_events_list
+      parameters:
+      - in: query
+        name: event_type
+        schema:
+          type: string
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - failed
+          - pending
+          - processed
+        description: |-
+          * `pending` - Pending
+          * `processed` - Processed
+          * `failed` - Failed
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedDomainEventList'
+          description: ''
+  /api/v1/domain-events/{id}/:
+    get:
+      operationId: v1_domain_events_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this domain event.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DomainEvent'
+          description: ''
+  /api/v1/domain-events/process-pending/:
+    post:
+      operationId: v1_domain_events_process_pending_create
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProcessDomainEventsRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ProcessDomainEventsRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProcessDomainEventsRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProcessDomainEventsResponse'
+          description: ''
+  /api/v1/lab-orders/:
+    get:
+      operationId: v1_lab_orders_list
+      parameters:
+      - in: query
+        name: admission
+        schema:
+          type: number
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - in: query
+        name: patient
+        schema:
+          type: number
+      - in: query
+        name: priority
+        schema:
+          type: string
+          enum:
+          - routine
+          - stat
+          - urgent
+        description: |-
+          * `routine` - Routine
+          * `urgent` - Urgent
+          * `stat` - STAT
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - cancelled
+          - completed
+          - in_progress
+          - ordered
+        description: |-
+          * `ordered` - Ordered
+          * `in_progress` - In Progress
+          * `completed` - Completed
+          * `cancelled` - Cancelled
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedLabOrderList'
+          description: ''
+    post:
+      operationId: v1_lab_orders_create
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LabOrder'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/LabOrder'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/LabOrder'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LabOrder'
+          description: ''
+  /api/v1/lab-orders/{id}/:
+    get:
+      operationId: v1_lab_orders_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this lab order.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LabOrder'
+          description: ''
+    put:
+      operationId: v1_lab_orders_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this lab order.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LabOrder'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/LabOrder'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/LabOrder'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LabOrder'
+          description: ''
+    patch:
+      operationId: v1_lab_orders_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this lab order.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedLabOrder'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedLabOrder'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedLabOrder'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LabOrder'
+          description: ''
+    delete:
+      operationId: v1_lab_orders_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this lab order.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/lab-orders/{id}/complete/:
+    post:
+      operationId: v1_lab_orders_complete_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this lab order.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LabOrderComplete'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/LabOrderComplete'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/LabOrderComplete'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LabOrder'
+          description: ''
+  /api/v1/lab-orders/{id}/start/:
+    post:
+      operationId: v1_lab_orders_start_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this lab order.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LabOrder'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/LabOrder'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/LabOrder'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LabOrder'
+          description: ''
+  /api/v1/medication-orders/:
+    get:
+      operationId: v1_medication_orders_list
+      parameters:
+      - in: query
+        name: admission
+        schema:
+          type: number
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - in: query
+        name: patient
+        schema:
+          type: number
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - active
+          - completed
+          - stopped
+        description: |-
+          * `active` - Active
+          * `completed` - Completed
+          * `stopped` - Stopped
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedMedicationOrderList'
+          description: ''
+    post:
+      operationId: v1_medication_orders_create
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MedicationOrder'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/MedicationOrder'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MedicationOrder'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MedicationOrder'
+          description: ''
+  /api/v1/medication-orders/{id}/:
+    get:
+      operationId: v1_medication_orders_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this medication order.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MedicationOrder'
+          description: ''
+    put:
+      operationId: v1_medication_orders_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this medication order.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MedicationOrder'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/MedicationOrder'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MedicationOrder'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MedicationOrder'
+          description: ''
+    patch:
+      operationId: v1_medication_orders_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this medication order.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedMedicationOrder'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedMedicationOrder'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedMedicationOrder'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MedicationOrder'
+          description: ''
+    delete:
+      operationId: v1_medication_orders_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this medication order.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/medication-orders/{id}/mark-status/:
+    post:
+      operationId: v1_medication_orders_mark_status_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this medication order.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MedicationStatusUpdate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/MedicationStatusUpdate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MedicationStatusUpdate'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MedicationOrder'
+          description: ''
+  /api/v1/patients/:
+    get:
+      operationId: v1_patients_list
+      parameters:
+      - in: query
+        name: blood_type
+        schema:
+          type: string
+      - in: query
+        name: gender
+        schema:
+          type: string
+          enum:
+          - female
+          - male
+          - other
+        description: |-
+          * `male` - Male
+          * `female` - Female
+          * `other` - Other
+      - in: query
+        name: max_age
+        schema:
+          type: integer
+      - in: query
+        name: min_age
+        schema:
+          type: integer
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedPatientList'
+          description: ''
+    post:
+      operationId: v1_patients_create
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Patient'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Patient'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Patient'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Patient'
+          description: ''
+  /api/v1/patients/{id}/:
+    get:
+      operationId: v1_patients_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this patient.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Patient'
+          description: ''
+    put:
+      operationId: v1_patients_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this patient.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Patient'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Patient'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Patient'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Patient'
+          description: ''
+    patch:
+      operationId: v1_patients_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this patient.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedPatient'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedPatient'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedPatient'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Patient'
+          description: ''
+    delete:
+      operationId: v1_patients_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this patient.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/patients/{id}/care-plan/:
+    get:
+      operationId: v1_patients_care_plan_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this patient.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Patient'
+          description: ''
+  /api/v1/patients/{id}/community-recommendations/:
+    get:
+      operationId: v1_patients_community_recommendations_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this patient.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommunityRecommendationResponse'
+          description: ''
+  /api/v1/patients/{id}/journey/:
+    get:
+      operationId: v1_patients_journey_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this patient.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Patient'
+          description: ''
+  /api/v1/predict/health-risk/:
+    post:
+      operationId: v1_predict_health_risk_create
+      description: |-
+        Public demo scoring endpoint.
+
+        Deliberately `AllowAny` (documented in README) so visitors can try the
+        triage model without an account. Because it is unauthenticated and
+        compute-bearing, it is a classic scraping/abuse target, so it carries
+        its own tighter scoped throttle rather than relying solely on the
+        blanket anonymous rate (see `DRF_THROTTLE_PREDICT` / `PREDICT_HEALTH_RISK`
+        scope in `careflow/settings.py`).
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TriageAssessmentRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TriageAssessmentRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TriageAssessmentRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RiskPrediction'
+          description: ''
+  /api/v1/referrals/:
+    get:
+      operationId: v1_referrals_list
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - in: query
+        name: patient
+        schema:
+          type: number
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - completed
+          - contacted
+          - declined
+          - enrolled
+          - recommended
+        description: |-
+          * `recommended` - Recommended
+          * `contacted` - Contacted
+          * `enrolled` - Enrolled
+          * `completed` - Completed
+          * `declined` - Declined
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedResourceReferralList'
+          description: ''
+    post:
+      operationId: v1_referrals_create
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResourceReferral'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ResourceReferral'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ResourceReferral'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResourceReferral'
+          description: ''
+  /api/v1/referrals/{id}/:
+    get:
+      operationId: v1_referrals_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this resource referral.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResourceReferral'
+          description: ''
+    put:
+      operationId: v1_referrals_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this resource referral.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResourceReferral'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ResourceReferral'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ResourceReferral'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResourceReferral'
+          description: ''
+    patch:
+      operationId: v1_referrals_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this resource referral.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedResourceReferral'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedResourceReferral'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedResourceReferral'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResourceReferral'
+          description: ''
+    delete:
+      operationId: v1_referrals_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this resource referral.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/triage/assess/:
+    post:
+      operationId: v1_triage_assess_create
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TriageAssessmentRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TriageAssessmentRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TriageAssessmentRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TriageAssessmentResponse'
+          description: ''
+  /api/v1/wards/:
+    get:
+      operationId: v1_wards_list
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedHospitalWardList'
+          description: ''
+    post:
+      operationId: v1_wards_create
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HospitalWard'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/HospitalWard'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/HospitalWard'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HospitalWard'
+          description: ''
+  /api/v1/wards/{id}/:
+    get:
+      operationId: v1_wards_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this hospital ward.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HospitalWard'
+          description: ''
+    put:
+      operationId: v1_wards_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this hospital ward.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HospitalWard'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/HospitalWard'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/HospitalWard'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HospitalWard'
+          description: ''
+    patch:
+      operationId: v1_wards_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this hospital ward.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedHospitalWard'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedHospitalWard'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedHospitalWard'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HospitalWard'
+          description: ''
+    delete:
+      operationId: v1_wards_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this hospital ward.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/workflow-rules/:
+    get:
+      operationId: v1_workflow_rules_list
+      parameters:
+      - in: query
+        name: active
+        schema:
+          type: boolean
+      - in: query
+        name: event_type
+        schema:
+          type: string
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedWorkflowRuleList'
+          description: ''
+    post:
+      operationId: v1_workflow_rules_create
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WorkflowRule'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/WorkflowRule'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/WorkflowRule'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkflowRule'
+          description: ''
+  /api/v1/workflow-rules/{id}/:
+    get:
+      operationId: v1_workflow_rules_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this workflow rule.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkflowRule'
+          description: ''
+    put:
+      operationId: v1_workflow_rules_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this workflow rule.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WorkflowRule'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/WorkflowRule'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/WorkflowRule'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkflowRule'
+          description: ''
+    patch:
+      operationId: v1_workflow_rules_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this workflow rule.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedWorkflowRule'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedWorkflowRule'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedWorkflowRule'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkflowRule'
+          description: ''
+    delete:
+      operationId: v1_workflow_rules_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this workflow rule.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+components:
+  schemas:
+    ActionTypeEnum:
+      enum:
+      - create_alert
+      - create_appointment
+      - create_referral
+      type: string
+      description: |-
+        * `create_alert` - Create Alert
+        * `create_appointment` - Create Appointment
+        * `create_referral` - Create Referral
+    Admission:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        patient:
+          type: integer
+        patient_name:
+          type: string
+          readOnly: true
+        bed:
+          type: integer
+          nullable: true
+        bed_label:
+          type: string
+          readOnly: true
+        admitted_by_username:
+          type: string
+          readOnly: true
+        reason:
+          type: string
+          maxLength: 255
+        diagnosis_on_admission:
+          type: string
+        status:
+          $ref: '#/components/schemas/AdmissionStatusEnum'
+        admitted_at:
+          type: string
+          format: date-time
+          readOnly: true
+        expected_discharge_date:
+          type: string
+          format: date
+          nullable: true
+        discharge_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        discharge_summary:
+          type: string
+      required:
+      - admitted_at
+      - admitted_by_username
+      - bed_label
+      - discharge_at
+      - id
+      - patient
+      - patient_name
+      - reason
+    AdmissionDischargeRequest:
+      type: object
+      properties:
+        discharge_summary:
+          type: string
+    AdmissionStatusEnum:
+      enum:
+      - admitted
+      - discharged
+      - transferred
+      type: string
+      description: |-
+        * `admitted` - Admitted
+        * `discharged` - Discharged
+        * `transferred` - Transferred
+    AlertSeverityEnum:
+      enum:
+      - medium
+      - high
+      - critical
+      type: string
+      description: |-
+        * `medium` - Medium
+        * `high` - High
+        * `critical` - Critical
+    AnalyticsKpi:
+      type: object
+      properties:
+        patients_total:
+          type: integer
+        upcoming_appointments:
+          type: integer
+        assessments_last_30_days:
+          type: integer
+        open_alerts:
+          type: integer
+      required:
+      - assessments_last_30_days
+      - open_alerts
+      - patients_total
+      - upcoming_appointments
+    AnalyticsOverview:
+      type: object
+      properties:
+        generated_at:
+          type: string
+          format: date-time
+        kpis:
+          $ref: '#/components/schemas/AnalyticsKpi'
+        risk_distribution_last_30_days:
+          type: object
+          additionalProperties:
+            type: integer
+        top_diagnoses:
+          type: array
+          items:
+            $ref: '#/components/schemas/DiagnosisBreakdown'
+        assessment_trend:
+          type: array
+          items:
+            $ref: '#/components/schemas/AssessmentTrendPoint'
+      required:
+      - assessment_trend
+      - generated_at
+      - kpis
+      - risk_distribution_last_30_days
+      - top_diagnoses
+    Appointment:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        patient:
+          type: integer
+        patient_name:
+          type: string
+          readOnly: true
+        clinician_name:
+          type: string
+          maxLength: 255
+        reason:
+          type: string
+          maxLength: 255
+        scheduled_at:
+          type: string
+          format: date-time
+        status:
+          $ref: '#/components/schemas/AppointmentStatusEnum'
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - clinician_name
+      - created_at
+      - id
+      - patient
+      - patient_name
+      - scheduled_at
+    AppointmentStatusEnum:
+      enum:
+      - scheduled
+      - completed
+      - cancelled
+      - no_show
+      type: string
+      description: |-
+        * `scheduled` - Scheduled
+        * `completed` - Completed
+        * `cancelled` - Cancelled
+        * `no_show` - No Show
+    AssessmentTrendPoint:
+      type: object
+      properties:
+        date:
+          type: string
+          format: date
+        count:
+          type: integer
+      required:
+      - count
+      - date
+    Bed:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        ward:
+          type: integer
+        ward_code:
+          type: string
+          readOnly: true
+        bed_number:
+          type: string
+          maxLength: 20
+        status:
+          $ref: '#/components/schemas/BedStatusEnum'
+        current_patient:
+          type: integer
+          nullable: true
+        current_patient_name:
+          type: string
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - bed_number
+      - current_patient_name
+      - id
+      - updated_at
+      - ward
+      - ward_code
+    BedStatusEnum:
+      enum:
+      - available
+      - occupied
+      - cleaning
+      - maintenance
+      type: string
+      description: |-
+        * `available` - Available
+        * `occupied` - Occupied
+        * `cleaning` - Cleaning
+        * `maintenance` - Maintenance
+    CategoryEnum:
+      enum:
+      - mental_health
+      - food_support
+      - transport
+      - financial
+      - housing
+      - chronic_care
+      - wellness
+      type: string
+      description: |-
+        * `mental_health` - Mental Health
+        * `food_support` - Food Support
+        * `transport` - Transport
+        * `financial` - Financial Aid
+        * `housing` - Housing
+        * `chronic_care` - Chronic Care
+        * `wellness` - Wellness
+    CheckInResponse:
+      type: object
+      properties:
+        checkin:
+          $ref: '#/components/schemas/PatientCheckIn'
+        alert_created:
+          type: boolean
+        alert_id:
+          type: integer
+          nullable: true
+      required:
+      - alert_created
+      - alert_id
+      - checkin
+    ClinicalAlert:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        patient:
+          type: integer
+        patient_name:
+          type: string
+          readOnly: true
+        assessment:
+          type: integer
+          nullable: true
+        severity:
+          $ref: '#/components/schemas/AlertSeverityEnum'
+        title:
+          type: string
+          maxLength: 255
+        message:
+          type: string
+        resolved:
+          type: boolean
+        resolved_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - message
+      - patient
+      - patient_name
+      - severity
+      - title
+    CommunityRecommendationResponse:
+      type: object
+      properties:
+        patient_id:
+          type: integer
+        recommendations:
+          type: array
+          items:
+            $ref: '#/components/schemas/ResourceRecommendation'
+        auto_referrals_created:
+          type: array
+          items:
+            type: integer
+      required:
+      - auto_referrals_created
+      - patient_id
+      - recommendations
+    CommunityResource:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 255
+        category:
+          $ref: '#/components/schemas/CategoryEnum'
+        location:
+          type: string
+          maxLength: 255
+        contact_phone:
+          type: string
+          maxLength: 30
+        website:
+          type: string
+          format: uri
+          maxLength: 200
+        description:
+          type: string
+        eligibility:
+          type: string
+          maxLength: 255
+        active:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - category
+      - created_at
+      - id
+      - name
+    CurrentUserProfile:
+      type: object
+      properties:
+        id:
+          type: integer
+        username:
+          type: string
+        is_superuser:
+          type: boolean
+        roles:
+          type: array
+          items:
+            type: string
+      required:
+      - id
+      - is_superuser
+      - roles
+      - username
+    DiagnosisBreakdown:
+      type: object
+      properties:
+        diagnosis:
+          type: string
+        count:
+          type: integer
+      required:
+      - count
+      - diagnosis
+    DomainEvent:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        event_type:
+          type: string
+          readOnly: true
+        source:
+          type: string
+          readOnly: true
+        payload:
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/DomainEventStatusEnum'
+          readOnly: true
+        attempts:
+          type: integer
+          readOnly: true
+        error_message:
+          type: string
+          readOnly: true
+        occurred_at:
+          type: string
+          format: date-time
+          readOnly: true
+        processed_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+      required:
+      - attempts
+      - error_message
+      - event_type
+      - id
+      - occurred_at
+      - payload
+      - processed_at
+      - source
+      - status
+    DomainEventStatusEnum:
+      enum:
+      - pending
+      - processed
+      - failed
+      type: string
+      description: |-
+        * `pending` - Pending
+        * `processed` - Processed
+        * `failed` - Failed
+    GenderEnum:
+      enum:
+      - male
+      - female
+      - other
+      type: string
+      description: |-
+        * `male` - Male
+        * `female` - Female
+        * `other` - Other
+    HospitalFlowKpi:
+      type: object
+      properties:
+        active_admissions:
+          type: integer
+        bed_occupancy_rate:
+          type: number
+          format: double
+        available_beds:
+          type: integer
+        active_medication_orders:
+          type: integer
+        pending_lab_orders:
+          type: integer
+        discharges_last_7_days:
+          type: integer
+      required:
+      - active_admissions
+      - active_medication_orders
+      - available_beds
+      - bed_occupancy_rate
+      - discharges_last_7_days
+      - pending_lab_orders
+    HospitalFlowOverview:
+      type: object
+      properties:
+        generated_at:
+          type: string
+          format: date-time
+        kpis:
+          $ref: '#/components/schemas/HospitalFlowKpi'
+        admissions_by_status:
+          type: object
+          additionalProperties:
+            type: integer
+        labs_by_status:
+          type: object
+          additionalProperties:
+            type: integer
+      required:
+      - admissions_by_status
+      - generated_at
+      - kpis
+      - labs_by_status
+    HospitalWard:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 255
+        code:
+          type: string
+          maxLength: 30
+        specialty:
+          $ref: '#/components/schemas/SpecialtyEnum'
+        floor:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        capacity:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        active:
+          type: boolean
+        occupied_beds:
+          type: integer
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - code
+      - created_at
+      - id
+      - name
+      - occupied_beds
+    ImpactKpi:
+      type: object
+      properties:
+        active_community_resources:
+          type: integer
+        referrals_last_30_days:
+          type: integer
+        completed_referrals:
+          type: integer
+        urgent_checkins_last_7_days:
+          type: integer
+      required:
+      - active_community_resources
+      - completed_referrals
+      - referrals_last_30_days
+      - urgent_checkins_last_7_days
+    ImpactOverview:
+      type: object
+      properties:
+        generated_at:
+          type: string
+          format: date-time
+        kpis:
+          $ref: '#/components/schemas/ImpactKpi'
+        referral_status_breakdown:
+          type: object
+          additionalProperties:
+            type: integer
+        resource_category_breakdown:
+          type: object
+          additionalProperties:
+            type: integer
+      required:
+      - generated_at
+      - kpis
+      - referral_status_breakdown
+      - resource_category_breakdown
+    LabOrder:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        patient:
+          type: integer
+        patient_name:
+          type: string
+          readOnly: true
+        admission:
+          type: integer
+          nullable: true
+        ordered_by_username:
+          type: string
+          readOnly: true
+        test_name:
+          type: string
+          maxLength: 255
+        priority:
+          $ref: '#/components/schemas/PriorityEnum'
+        status:
+          $ref: '#/components/schemas/LabOrderStatusEnum'
+        sample_collected_at:
+          type: string
+          format: date-time
+          nullable: true
+        result_value:
+          type: string
+          maxLength: 255
+        result_summary:
+          type: string
+        ordered_at:
+          type: string
+          format: date-time
+          readOnly: true
+        completed_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+      required:
+      - completed_at
+      - id
+      - ordered_at
+      - ordered_by_username
+      - patient
+      - patient_name
+      - test_name
+    LabOrderComplete:
+      type: object
+      properties:
+        result_value:
+          type: string
+          maxLength: 255
+        result_summary:
+          type: string
+    LabOrderStatusEnum:
+      enum:
+      - ordered
+      - in_progress
+      - completed
+      - cancelled
+      type: string
+      description: |-
+        * `ordered` - Ordered
+        * `in_progress` - In Progress
+        * `completed` - Completed
+        * `cancelled` - Cancelled
+    LogoutRequest:
+      type: object
+      description: |-
+        Input contract for POST /api/auth/logout/.
+
+        The refresh token must be supplied explicitly (not read from a cookie)
+        because this API is stateless/bearer-token based — the client is
+        responsible for holding and submitting the token it wants revoked.
+      properties:
+        refresh:
+          type: string
+          description: The refresh token to invalidate. Required to log out.
+      required:
+      - refresh
+    MedicationOrder:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        patient:
+          type: integer
+        patient_name:
+          type: string
+          readOnly: true
+        admission:
+          type: integer
+          nullable: true
+        prescribed_by_username:
+          type: string
+          readOnly: true
+        medication_name:
+          type: string
+          maxLength: 255
+        dosage:
+          type: string
+          maxLength: 120
+        frequency:
+          type: string
+          maxLength: 120
+        route:
+          $ref: '#/components/schemas/RouteEnum'
+        instructions:
+          type: string
+        status:
+          $ref: '#/components/schemas/MedicationOrderStatusEnum'
+        start_at:
+          type: string
+          format: date-time
+        end_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - dosage
+      - frequency
+      - id
+      - medication_name
+      - patient
+      - patient_name
+      - prescribed_by_username
+    MedicationOrderStatusEnum:
+      enum:
+      - active
+      - completed
+      - stopped
+      type: string
+      description: |-
+        * `active` - Active
+        * `completed` - Completed
+        * `stopped` - Stopped
+    MedicationStatusUpdate:
+      type: object
+      properties:
+        status:
+          $ref: '#/components/schemas/MedicationOrderStatusEnum'
+        notes:
+          type: string
+      required:
+      - status
+    PaginatedAdmissionList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Admission'
+    PaginatedAppointmentList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Appointment'
+    PaginatedBedList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Bed'
+    PaginatedClinicalAlertList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ClinicalAlert'
+    PaginatedCommunityResourceList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/CommunityResource'
+    PaginatedDomainEventList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/DomainEvent'
+    PaginatedHospitalWardList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/HospitalWard'
+    PaginatedLabOrderList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/LabOrder'
+    PaginatedMedicationOrderList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/MedicationOrder'
+    PaginatedPatientCheckInList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/PatientCheckIn'
+    PaginatedPatientList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Patient'
+    PaginatedResourceReferralList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ResourceReferral'
+    PaginatedRiskAssessmentList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/RiskAssessment'
+    PaginatedWorkflowRuleList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/WorkflowRule'
+    PatchedAdmission:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        patient:
+          type: integer
+        patient_name:
+          type: string
+          readOnly: true
+        bed:
+          type: integer
+          nullable: true
+        bed_label:
+          type: string
+          readOnly: true
+        admitted_by_username:
+          type: string
+          readOnly: true
+        reason:
+          type: string
+          maxLength: 255
+        diagnosis_on_admission:
+          type: string
+        status:
+          $ref: '#/components/schemas/AdmissionStatusEnum'
+        admitted_at:
+          type: string
+          format: date-time
+          readOnly: true
+        expected_discharge_date:
+          type: string
+          format: date
+          nullable: true
+        discharge_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        discharge_summary:
+          type: string
+    PatchedAppointment:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        patient:
+          type: integer
+        patient_name:
+          type: string
+          readOnly: true
+        clinician_name:
+          type: string
+          maxLength: 255
+        reason:
+          type: string
+          maxLength: 255
+        scheduled_at:
+          type: string
+          format: date-time
+        status:
+          $ref: '#/components/schemas/AppointmentStatusEnum'
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+    PatchedBed:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        ward:
+          type: integer
+        ward_code:
+          type: string
+          readOnly: true
+        bed_number:
+          type: string
+          maxLength: 20
+        status:
+          $ref: '#/components/schemas/BedStatusEnum'
+        current_patient:
+          type: integer
+          nullable: true
+        current_patient_name:
+          type: string
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+    PatchedClinicalAlert:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        patient:
+          type: integer
+        patient_name:
+          type: string
+          readOnly: true
+        assessment:
+          type: integer
+          nullable: true
+        severity:
+          $ref: '#/components/schemas/AlertSeverityEnum'
+        title:
+          type: string
+          maxLength: 255
+        message:
+          type: string
+        resolved:
+          type: boolean
+        resolved_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+    PatchedCommunityResource:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 255
+        category:
+          $ref: '#/components/schemas/CategoryEnum'
+        location:
+          type: string
+          maxLength: 255
+        contact_phone:
+          type: string
+          maxLength: 30
+        website:
+          type: string
+          format: uri
+          maxLength: 200
+        description:
+          type: string
+        eligibility:
+          type: string
+          maxLength: 255
+        active:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+    PatchedHospitalWard:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 255
+        code:
+          type: string
+          maxLength: 30
+        specialty:
+          $ref: '#/components/schemas/SpecialtyEnum'
+        floor:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        capacity:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        active:
+          type: boolean
+        occupied_beds:
+          type: integer
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+    PatchedLabOrder:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        patient:
+          type: integer
+        patient_name:
+          type: string
+          readOnly: true
+        admission:
+          type: integer
+          nullable: true
+        ordered_by_username:
+          type: string
+          readOnly: true
+        test_name:
+          type: string
+          maxLength: 255
+        priority:
+          $ref: '#/components/schemas/PriorityEnum'
+        status:
+          $ref: '#/components/schemas/LabOrderStatusEnum'
+        sample_collected_at:
+          type: string
+          format: date-time
+          nullable: true
+        result_value:
+          type: string
+          maxLength: 255
+        result_summary:
+          type: string
+        ordered_at:
+          type: string
+          format: date-time
+          readOnly: true
+        completed_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+    PatchedMedicationOrder:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        patient:
+          type: integer
+        patient_name:
+          type: string
+          readOnly: true
+        admission:
+          type: integer
+          nullable: true
+        prescribed_by_username:
+          type: string
+          readOnly: true
+        medication_name:
+          type: string
+          maxLength: 255
+        dosage:
+          type: string
+          maxLength: 120
+        frequency:
+          type: string
+          maxLength: 120
+        route:
+          $ref: '#/components/schemas/RouteEnum'
+        instructions:
+          type: string
+        status:
+          $ref: '#/components/schemas/MedicationOrderStatusEnum'
+        start_at:
+          type: string
+          format: date-time
+        end_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+    PatchedPatient:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 255
+        age:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        gender:
+          $ref: '#/components/schemas/GenderEnum'
+        blood_type:
+          type: string
+          nullable: true
+          maxLength: 3
+        diagnosis:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+    PatchedPatientCheckIn:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        patient:
+          type: integer
+        patient_name:
+          type: string
+          readOnly: true
+        submitted_by_username:
+          type: string
+          readOnly: true
+        symptom_severity:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        mood_score:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        medication_taken:
+          type: boolean
+        systolic_bp:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+          nullable: true
+        oxygen_saturation:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+          nullable: true
+        heart_rate:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+          nullable: true
+        notes:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+    PatchedResourceReferral:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        patient:
+          type: integer
+        patient_name:
+          type: string
+          readOnly: true
+        resource:
+          type: integer
+        resource_name:
+          type: string
+          readOnly: true
+        referred_by_username:
+          type: string
+          readOnly: true
+        reason:
+          type: string
+          maxLength: 255
+        status:
+          $ref: '#/components/schemas/ReferralStatusEnum'
+        follow_up_date:
+          type: string
+          format: date
+          nullable: true
+        impact_notes:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+    PatchedWorkflowRule:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 255
+        description:
+          type: string
+        event_type:
+          type: string
+          maxLength: 120
+        condition: {}
+        action_type:
+          $ref: '#/components/schemas/ActionTypeEnum'
+        action_config: {}
+        priority:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        active:
+          type: boolean
+        created_by_username:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+    Patient:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 255
+        age:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        gender:
+          $ref: '#/components/schemas/GenderEnum'
+        blood_type:
+          type: string
+          nullable: true
+          maxLength: 3
+        diagnosis:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - age
+      - created_at
+      - gender
+      - id
+      - name
+      - updated_at
+    PatientCheckIn:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        patient:
+          type: integer
+        patient_name:
+          type: string
+          readOnly: true
+        submitted_by_username:
+          type: string
+          readOnly: true
+        symptom_severity:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        mood_score:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        medication_taken:
+          type: boolean
+        systolic_bp:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+          nullable: true
+        oxygen_saturation:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+          nullable: true
+        heart_rate:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+          nullable: true
+        notes:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - patient
+      - patient_name
+      - submitted_by_username
+    PriorityEnum:
+      enum:
+      - routine
+      - urgent
+      - stat
+      type: string
+      description: |-
+        * `routine` - Routine
+        * `urgent` - Urgent
+        * `stat` - STAT
+    ProcessDomainEventsRequest:
+      type: object
+      properties:
+        limit:
+          type: integer
+          maximum: 200
+          minimum: 1
+          default: 25
+        include_failed:
+          type: boolean
+          default: false
+        max_attempts:
+          type: integer
+          maximum: 20
+          minimum: 1
+          default: 3
+    ProcessDomainEventsResponse:
+      type: object
+      properties:
+        processed_count:
+          type: integer
+        failed_count:
+          type: integer
+        results:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+      required:
+      - failed_count
+      - processed_count
+      - results
+    ReferralStatusEnum:
+      enum:
+      - recommended
+      - contacted
+      - enrolled
+      - completed
+      - declined
+      type: string
+      description: |-
+        * `recommended` - Recommended
+        * `contacted` - Contacted
+        * `enrolled` - Enrolled
+        * `completed` - Completed
+        * `declined` - Declined
+    ResourceRecommendation:
+      type: object
+      properties:
+        category:
+          type: string
+        reason:
+          type: string
+        resources:
+          type: array
+          items:
+            $ref: '#/components/schemas/CommunityResource'
+      required:
+      - category
+      - reason
+      - resources
+    ResourceReferral:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        patient:
+          type: integer
+        patient_name:
+          type: string
+          readOnly: true
+        resource:
+          type: integer
+        resource_name:
+          type: string
+          readOnly: true
+        referred_by_username:
+          type: string
+          readOnly: true
+        reason:
+          type: string
+          maxLength: 255
+        status:
+          $ref: '#/components/schemas/ReferralStatusEnum'
+        follow_up_date:
+          type: string
+          format: date
+          nullable: true
+        impact_notes:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - patient
+      - patient_name
+      - referred_by_username
+      - resource
+      - resource_name
+      - updated_at
+    RiskAssessment:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        patient:
+          type: integer
+          nullable: true
+        patient_name:
+          type: string
+          readOnly: true
+        assessed_by_username:
+          type: string
+          readOnly: true
+        age:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        bmi:
+          type: number
+          format: double
+        blood_pressure:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        cholesterol:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        smoker:
+          type: boolean
+        exercise_minutes:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        chronic_conditions:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        risk_score:
+          type: number
+          format: double
+          readOnly: true
+        risk_level:
+          allOf:
+          - $ref: '#/components/schemas/RiskLevelEnum'
+          readOnly: true
+        recommended_action:
+          type: string
+          readOnly: true
+        key_drivers:
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - age
+      - assessed_by_username
+      - blood_pressure
+      - bmi
+      - cholesterol
+      - created_at
+      - id
+      - key_drivers
+      - patient_name
+      - recommended_action
+      - risk_level
+      - risk_score
+    RiskDriver:
+      type: object
+      properties:
+        factor:
+          type: string
+        impact:
+          type: number
+          format: double
+      required:
+      - factor
+      - impact
+    RiskLevelEnum:
+      enum:
+      - Low
+      - Medium
+      - High
+      - Critical
+      type: string
+      description: |-
+        * `Low` - Low
+        * `Medium` - Medium
+        * `High` - High
+        * `Critical` - Critical
+    RiskPrediction:
+      type: object
+      properties:
+        risk_score:
+          type: number
+          format: double
+        risk_level:
+          type: string
+        recommended_action:
+          type: string
+        key_drivers:
+          type: array
+          items:
+            $ref: '#/components/schemas/RiskDriver'
+      required:
+      - key_drivers
+      - recommended_action
+      - risk_level
+      - risk_score
+    RouteEnum:
+      enum:
+      - oral
+      - iv
+      - im
+      - inhaled
+      - subcutaneous
+      type: string
+      description: |-
+        * `oral` - Oral
+        * `iv` - IV
+        * `im` - IM
+        * `inhaled` - Inhaled
+        * `subcutaneous` - Subcutaneous
+    SpecialtyEnum:
+      enum:
+      - general
+      - emergency
+      - icu
+      - maternity
+      - pediatrics
+      - surgery
+      type: string
+      description: |-
+        * `general` - General
+        * `emergency` - Emergency
+        * `icu` - ICU
+        * `maternity` - Maternity
+        * `pediatrics` - Pediatrics
+        * `surgery` - Surgery
+    TokenObtainPair:
+      type: object
+      properties:
+        username:
+          type: string
+          writeOnly: true
+        password:
+          type: string
+          writeOnly: true
+        access:
+          type: string
+          readOnly: true
+        refresh:
+          type: string
+          readOnly: true
+      required:
+      - access
+      - password
+      - refresh
+      - username
+    TokenRefresh:
+      type: object
+      properties:
+        access:
+          type: string
+          readOnly: true
+        refresh:
+          type: string
+          writeOnly: true
+      required:
+      - access
+      - refresh
+    TriageAssessmentRequest:
+      type: object
+      properties:
+        patient_id:
+          type: integer
+          nullable: true
+        age:
+          type: integer
+          maximum: 120
+          minimum: 0
+        bmi:
+          type: number
+          format: double
+          maximum: 80
+          minimum: 10
+        blood_pressure:
+          type: integer
+          maximum: 260
+          minimum: 70
+        cholesterol:
+          type: integer
+          maximum: 500
+          minimum: 100
+        smoker:
+          type: boolean
+          default: false
+        exercise_minutes:
+          type: integer
+          maximum: 2000
+          minimum: 0
+          default: 0
+        chronic_conditions:
+          type: integer
+          maximum: 15
+          minimum: 0
+          default: 0
+      required:
+      - age
+      - blood_pressure
+      - bmi
+      - cholesterol
+    TriageAssessmentResponse:
+      type: object
+      properties:
+        assessment:
+          $ref: '#/components/schemas/RiskAssessment'
+        alert_created:
+          type: boolean
+        alert_id:
+          type: integer
+          nullable: true
+      required:
+      - alert_created
+      - alert_id
+      - assessment
+    WorkflowRule:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 255
+        description:
+          type: string
+        event_type:
+          type: string
+          maxLength: 120
+        condition: {}
+        action_type:
+          $ref: '#/components/schemas/ActionTypeEnum'
+        action_config: {}
+        priority:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        active:
+          type: boolean
+        created_by_username:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - action_type
+      - created_at
+      - created_by_username
+      - event_type
+      - id
+      - name
+      - updated_at
+  securitySchemes:
+    jwtAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
